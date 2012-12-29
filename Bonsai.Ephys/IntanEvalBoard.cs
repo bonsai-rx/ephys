@@ -6,19 +6,66 @@ using OpenCV.Net;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.Xml.Serialization;
+using System.ComponentModel;
 
 namespace Bonsai.Ephys
 {
+    [Editor("Bonsai.Ephys.Design.IntanEvalBoardEditor, Bonsai.Ephys.Design", typeof(ComponentEditor))]
     public class IntanEvalBoard : Source<CvMat>
     {
-        IntanUsbSource source;
+        bool settle;
+        IntanUsbSource source = new IntanUsbSource();
+
+        [XmlIgnore]
+        [Browsable(false)]
+        public IntanUsbSource UsbSource
+        {
+            get { return source; }
+        }
+
+        [XmlIgnore]
+        public bool AmplifierSettle
+        {
+            get { return settle; }
+            set
+            {
+                settle = value;
+                if (settle) source.SettleOn();
+                else source.SettleOff();
+            }
+        }
+
+        public bool HighPassFilter
+        {
+            get { return source.EnableHPF; }
+            set { source.EnableHPF = value; }
+        }
+
+        public double HighPassFilterCutoff
+        {
+            get { return source.FHPF; }
+            set { source.FHPF = value; }
+        }
+
+        public bool NotchFilter
+        {
+            get { return source.EnableNotch; }
+            set { source.EnableNotch = value; }
+        }
+
+        public double NotchFrequency
+        {
+            get { return source.FNotch; }
+            set { source.FNotch = value; }
+        }
 
         public override IDisposable Load()
         {
+            settle = false;
             int firmwareID1 = 0;
             int firmwareID2 = 0;
             int firmwareID3 = 0;
-            source = new IntanUsbSource();
             source.Open(ref firmwareID1, ref firmwareID2, ref firmwareID3);
             return base.Load();
         }
@@ -26,7 +73,6 @@ namespace Bonsai.Ephys
         protected override void Unload()
         {
             source.Close();
-            source = null;
             base.Unload();
         }
 
@@ -40,7 +86,7 @@ namespace Bonsai.Ephys
                 {
                     while (running)
                     {
-                        var data = source.CheckForUsbData();
+                        var data = source.ReadUsbData();
                         if (data != null)
                         {
                             var dataFrame = data.DataFrame;

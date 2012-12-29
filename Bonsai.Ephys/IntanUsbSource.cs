@@ -49,7 +49,7 @@ namespace Bonsai.Ephys
     {
         // private variables
 
-        private FTDI myFtdiDeviceA;
+        private FTDI ftdiDeviceA;
         private float[,] dataRaw = new float[16, 750];
         private UInt16[] auxFrame = new UInt16[750];
         private float[,] dataFrame = new float[16, 750];
@@ -126,10 +126,10 @@ namespace Bonsai.Ephys
             FTDI.FT_STATUS ftStatus = FTDI.FT_STATUS.FT_OK;
 
             // Create new instance of the FTDI device class.
-            myFtdiDeviceA = new FTDI();
+            ftdiDeviceA = new FTDI();
 
             // Determine the number of FTDI devices connected to the machine.
-            ftStatus = myFtdiDeviceA.GetNumberOfDevices(ref ftdiDeviceCount);
+            ftStatus = ftdiDeviceA.GetNumberOfDevices(ref ftdiDeviceCount);
 
             // Check status.
             if (!(ftStatus == FTDI.FT_STATUS.FT_OK))
@@ -149,7 +149,7 @@ namespace Bonsai.Ephys
             FTDI.FT_DEVICE_INFO_NODE[] ftdiDeviceList = new FTDI.FT_DEVICE_INFO_NODE[ftdiDeviceCount];
 
             // Populate our device list.
-            ftStatus = myFtdiDeviceA.GetDeviceList(ftdiDeviceList);
+            ftStatus = ftdiDeviceA.GetDeviceList(ftdiDeviceList);
             // There could be a status error here, but we're not checking for it...
 
 
@@ -162,7 +162,7 @@ namespace Bonsai.Ephys
             // board is factory-configured with the name "Intan I/O board 1.0 A".  (FTDI provides software
             // routines to open device by its name.)
 
-            ftStatus = myFtdiDeviceA.OpenByDescription("Intan I/O Board 1.0 A");
+            ftStatus = ftdiDeviceA.OpenByDescription("Intan I/O Board 1.0 A");
             if (ftStatus != FTDI.FT_STATUS.FT_OK)
             {
                 IntanUsbException e = new IntanUsbException("Intan USB device A not found");
@@ -170,14 +170,14 @@ namespace Bonsai.Ephys
             }
                        
             // Set read timeout to 5 seconds, write timeout to infinite
-            ftStatus = myFtdiDeviceA.SetTimeouts(5000, 0);
+            ftStatus = ftdiDeviceA.SetTimeouts(5000, 0);
             // There could be status error here, but we're not checking for it...
 
             this.Stop();
 
             // Purge receive buffer
 
-            myFtdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
+            ftdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
 
             // Check board ID and version number
             //
@@ -188,7 +188,7 @@ namespace Bonsai.Ephys
             UInt32 numBytesWritten = 0;
             Byte[] myChars = { 73 };   // 'I' = request board ID and version number
 
-            ftStatus = myFtdiDeviceA.Write(myChars, 1, ref numBytesWritten);
+            ftStatus = ftdiDeviceA.Write(myChars, 1, ref numBytesWritten);
 
             if (ftStatus != FTDI.FT_STATUS.FT_OK)
             {
@@ -203,7 +203,7 @@ namespace Bonsai.Ephys
 
             while (numBytesAvailable < numBytesToRead)
             {
-                ftStatus = myFtdiDeviceA.GetRxBytesAvailable(ref numBytesAvailable);
+                ftStatus = ftdiDeviceA.GetRxBytesAvailable(ref numBytesAvailable);
 
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                 {
@@ -216,7 +216,7 @@ namespace Bonsai.Ephys
 
             UInt32 numBytesRead = 0;
 
-            ftStatus = myFtdiDeviceA.Read(readDataBufferA, numBytesToRead, ref numBytesRead);
+            ftStatus = ftdiDeviceA.Read(readDataBufferA, numBytesToRead, ref numBytesRead);
 
             if (ftStatus != FTDI.FT_STATUS.FT_OK)
             {
@@ -234,7 +234,7 @@ namespace Bonsai.Ephys
             this.SettleOff();
 
             // Purge receive buffer.
-            myFtdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
+            ftdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
 
             dataJustStarted = true;
 
@@ -248,7 +248,7 @@ namespace Bonsai.Ephys
             FTDI.FT_STATUS ftStatus;
 
             // Purge receive buffer
-            myFtdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
+            ftdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
 
             // The RHA2000-EVAL board is controlled by sending one-byte ASCII command characters over
             // the USB interface.  The 'S' character commands the board to start streaming amplifier
@@ -257,7 +257,7 @@ namespace Bonsai.Ephys
             UInt32 numBytesWritten = 0;
             Byte[] myChars = { 83 };   // 'S' = start data transfer
 
-            ftStatus = myFtdiDeviceA.Write(myChars, 1, ref numBytesWritten);
+            ftStatus = ftdiDeviceA.Write(myChars, 1, ref numBytesWritten);
 
             if (ftStatus != FTDI.FT_STATUS.FT_OK)
             {
@@ -285,10 +285,10 @@ namespace Bonsai.Ephys
             Byte[] myChars = { 115 };  // 's' = stop data transfer
             FTDI.FT_STATUS ftStatus;
 
-            ftStatus = myFtdiDeviceA.Write(myChars, 1, ref numBytesWritten);
+            ftStatus = ftdiDeviceA.Write(myChars, 1, ref numBytesWritten);
 
             // Purge receive buffer.
-            myFtdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
+            ftdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
 
             if (ftStatus != FTDI.FT_STATUS.FT_OK)
             {
@@ -304,7 +304,7 @@ namespace Bonsai.Ephys
         /// </summary>
         public void Close()
         {
-            myFtdiDeviceA.Close();
+            ftdiDeviceA.Close();
         }
 
         /// <summary>
@@ -312,7 +312,7 @@ namespace Bonsai.Ephys
         /// </summary>
         /// <param name="plotQueue">Queue used for plotting data to screen.</param>
         /// <param name="saveQueue">Queue used for saving data to disk.</param>
-        public IntanUsbData CheckForUsbData()
+        public IntanUsbData ReadUsbData()
         {
             // Note: Users must call CheckForUsbData periodically during time-consuming operations (like updating graphics)
             // to make sure the USB read buffer doesn't overflow!
@@ -324,21 +324,8 @@ namespace Bonsai.Ephys
             // if we read a small number of bytes at a time, data transfer is slow.
             // Empirically, waiting for 36000 bytes seems to work well.
 
-            // Wait until at least 30 msec of amplifier data have been received.
-            //ftStatus = myFtdiDeviceA.GetRxBytesAvailable(ref numBytesAvailableA);
-
-            //if (ftStatus != FTDI.FT_STATUS.FT_OK)
-            //{
-            //    UsbException e = new UsbException("Failed to get number of USB bytes available to read");
-            //    throw e;
-            //}
-            //if (numBytesAvailableA >= numBytesToRead) haveEnoughData = true;
-
-            // Now that we have the amount of data we want available, read it.
-
             UInt32 numBytesReadA = 0;
-
-            ftStatus = myFtdiDeviceA.Read(readDataBufferA, numBytesToRead, ref numBytesReadA);
+            ftStatus = ftdiDeviceA.Read(readDataBufferA, numBytesToRead, ref numBytesReadA);
             if (numBytesReadA != numBytesToRead)
             {
                 throw new IntanUsbException("Data out of sync!!");
@@ -559,27 +546,6 @@ namespace Bonsai.Ephys
         }
 
         /// <summary>
-        /// Return a random number from a Gaussian distribution with variance = 1.
-        /// </summary>
-        /// <param name="rand">Pseudo-random number generator object.</param>
-        /// <returns>Random number picked from Gaussian distribution.</returns>
-        private static float gaussian(Random rand)
-        {
-            double r = 0.0;
-            const double Sqrt3 = 1.73205080757;
-            const int N = 8;   // making N larger increases accuracy at the expense of speed
-
-            for (int i = 0; i < N; i++)
-            {
-                r += (Sqrt3 * 2.0 * rand.NextDouble()) - 1.0;
-            }
-
-            r /= Math.Sqrt(N);
-
-            return ((float)r);
-        }
-
-        /// <summary>
         /// Search for the '001111xx' byte that designates the end of a 16-channel data packet.
         /// </summary>
         /// <returns>Number of bytes we skipped trying to get back in sync.</returns>
@@ -603,7 +569,7 @@ namespace Bonsai.Ephys
 
                 while (numBytesAvailable < 1)
                 {
-                    ftStatus = myFtdiDeviceA.GetRxBytesAvailable(ref numBytesAvailable);
+                    ftStatus = ftdiDeviceA.GetRxBytesAvailable(ref numBytesAvailable);
 
                     if (ftStatus != FTDI.FT_STATUS.FT_OK)
                     {
@@ -615,7 +581,7 @@ namespace Bonsai.Ephys
                 // Now that we have the amount of data we want available, read it.
                 UInt32 numBytesRead = 0;
 
-                ftStatus = myFtdiDeviceA.Read(resyncBuffer, 1, ref numBytesRead);
+                ftStatus = ftdiDeviceA.Read(resyncBuffer, 1, ref numBytesRead);
 
                 if (ftStatus != FTDI.FT_STATUS.FT_OK)
                 {
@@ -652,10 +618,10 @@ namespace Bonsai.Ephys
                 myChars[1] = 83;
             }
 
-            FTDI.FT_STATUS ftStatus = myFtdiDeviceA.Write(myChars, 2, ref numBytesWritten);
+            FTDI.FT_STATUS ftStatus = ftdiDeviceA.Write(myChars, 2, ref numBytesWritten);
 
             // Purge receive buffer.
-            myFtdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
+            ftdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
 
             if (ftStatus != FTDI.FT_STATUS.FT_OK)
             {
@@ -680,10 +646,10 @@ namespace Bonsai.Ephys
                 myChars[1] = 83;
             }
 
-            FTDI.FT_STATUS ftStatus = myFtdiDeviceA.Write(myChars, 2, ref numBytesWritten);
+            FTDI.FT_STATUS ftStatus = ftdiDeviceA.Write(myChars, 2, ref numBytesWritten);
 
             // Purge receive buffer.
-            myFtdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
+            ftdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
 
             if (ftStatus != FTDI.FT_STATUS.FT_OK)
             {
@@ -708,10 +674,10 @@ namespace Bonsai.Ephys
                 myChars[1] = 83;
             }
 
-            FTDI.FT_STATUS ftStatus = myFtdiDeviceA.Write(myChars, 2, ref numBytesWritten);
+            FTDI.FT_STATUS ftStatus = ftdiDeviceA.Write(myChars, 2, ref numBytesWritten);
 
             // Purge receive buffer.
-            myFtdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
+            ftdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
 
             if (ftStatus != FTDI.FT_STATUS.FT_OK)
             {
@@ -736,10 +702,10 @@ namespace Bonsai.Ephys
                 myChars[1] = 83;
             }
 
-            FTDI.FT_STATUS ftStatus = myFtdiDeviceA.Write(myChars, 2, ref numBytesWritten);
+            FTDI.FT_STATUS ftStatus = ftdiDeviceA.Write(myChars, 2, ref numBytesWritten);
 
             // Purge receive buffer.
-            myFtdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
+            ftdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
 
             if (ftStatus != FTDI.FT_STATUS.FT_OK)
             {
@@ -766,10 +732,10 @@ namespace Bonsai.Ephys
                 myChars[1] = 83;
             }
 
-            FTDI.FT_STATUS ftStatus = myFtdiDeviceA.Write(myChars, 2, ref numBytesWritten);
+            FTDI.FT_STATUS ftStatus = ftdiDeviceA.Write(myChars, 2, ref numBytesWritten);
 
             // Purge receive buffer.
-            myFtdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
+            ftdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
 
             if (ftStatus != FTDI.FT_STATUS.FT_OK)
             {
@@ -796,10 +762,10 @@ namespace Bonsai.Ephys
                 myChars[1] = 83;
             }
 
-            FTDI.FT_STATUS ftStatus = myFtdiDeviceA.Write(myChars, 2, ref numBytesWritten);
+            FTDI.FT_STATUS ftStatus = ftdiDeviceA.Write(myChars, 2, ref numBytesWritten);
 
             // Purge receive buffer.
-            myFtdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
+            ftdiDeviceA.Purge(FTDI.FT_PURGE.FT_PURGE_RX);
 
             if (ftStatus != FTDI.FT_STATUS.FT_OK)
             {
