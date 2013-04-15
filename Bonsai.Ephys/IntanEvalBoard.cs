@@ -12,7 +12,7 @@ using System.ComponentModel;
 namespace Bonsai.Ephys
 {
     [Editor("Bonsai.Ephys.Design.IntanEvalBoardEditor, Bonsai.Ephys.Design", typeof(ComponentEditor))]
-    public class IntanEvalBoard : Source<CvMat>
+    public class IntanEvalBoard : Source<EvalBoardData>
     {
         bool settle;
         IntanUsbSource source = new IntanUsbSource();
@@ -76,9 +76,9 @@ namespace Bonsai.Ephys
             base.Unload();
         }
 
-        protected override IObservable<CvMat> Generate()
+        protected override IObservable<EvalBoardData> Generate()
         {
-            return Observable.Create<CvMat>(observer =>
+            return Observable.Create<EvalBoardData>(observer =>
             {
                 var running = true;
                 source.Start();
@@ -92,11 +92,19 @@ namespace Bonsai.Ephys
                             var dataFrame = data.DataFrame;
                             var numChannels = dataFrame.GetLength(0);
                             var numSamples = dataFrame.GetLength(1);
+
                             var dataHandle = GCHandle.Alloc(dataFrame, GCHandleType.Pinned);
                             var dataHeader = new CvMat(numChannels, numSamples, CvMatDepth.CV_32F, 1, dataHandle.AddrOfPinnedObject());
-                            var output = dataHeader.Clone();
+                            var dataOutput = dataHeader.Clone();
                             dataHandle.Free();
-                            observer.OnNext(output);
+
+                            var auxFrame = data.AuxFrame;
+                            var auxHandle = GCHandle.Alloc(auxFrame, GCHandleType.Pinned);
+                            var auxHeader = new CvMat(1, auxFrame.Length, CvMatDepth.CV_16U, 1, auxHandle.AddrOfPinnedObject());
+                            var auxOutput = auxHeader.Clone();
+                            auxHandle.Free();
+
+                            observer.OnNext(new EvalBoardData(dataOutput, auxOutput));
 
                         }
                     }
