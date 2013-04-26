@@ -89,23 +89,9 @@ namespace Bonsai.Ephys
                         var data = source.ReadUsbData();
                         if (data != null)
                         {
-                            var dataFrame = data.DataFrame;
-                            var numChannels = dataFrame.GetLength(0);
-                            var numSamples = dataFrame.GetLength(1);
-
-                            var dataHandle = GCHandle.Alloc(dataFrame, GCHandleType.Pinned);
-                            var dataHeader = new CvMat(numChannels, numSamples, CvMatDepth.CV_32F, 1, dataHandle.AddrOfPinnedObject());
-                            var dataOutput = dataHeader.Clone();
-                            dataHandle.Free();
-
-                            var auxFrame = data.AuxFrame;
-                            var auxHandle = GCHandle.Alloc(auxFrame, GCHandleType.Pinned);
-                            var auxHeader = new CvMat(1, auxFrame.Length, CvMatDepth.CV_16U, 1, auxHandle.AddrOfPinnedObject());
-                            var auxOutput = auxHeader.Clone();
-                            auxHandle.Free();
-
+                            var dataOutput = CvMat.FromArray(data.DataFrame);
+                            var auxOutput = CvMat.FromArray(data.AuxFrame);
                             observer.OnNext(new EvalBoardData(dataOutput, auxOutput));
-
                         }
                     }
                 });
