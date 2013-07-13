@@ -46,6 +46,191 @@ namespace Bonsai.Ephys
 
         public bool DspEnabled { get; set; }
 
+        IEnumerator<int> LedSequence()
+        {
+            var ledArray = new[] { 1, 0, 0, 0, 0, 0, 0, 0 };
+            var ledIndex = 0;
+            evalBoard.SetLedDisplay(ledArray);
+            yield return ledIndex;
+
+            try
+            {
+                while (true)
+                {
+                    ledArray[ledIndex] = 0;
+                    ledIndex = (ledIndex + 1) % ledArray.Length;
+                    ledArray[ledIndex] = 1;
+                    evalBoard.SetLedDisplay(ledArray);
+                    yield return ledIndex;
+                }
+            }
+            finally
+            {
+                ledArray[ledIndex] = 0;
+                evalBoard.SetLedDisplay(ledArray);
+            }
+        }
+
+        void ImpedanceMeasurement()
+        {
+            var actualImpedanceFreq = 0.0;
+
+            var sampleRate = evalBoard.GetSampleRate();
+            var chipRegisters = new Rhd2000Registers(sampleRate);
+            var ledSequence = LedSequence();
+            ledSequence.MoveNext();
+
+            // Create a command list for the AuxCmd1 slot.
+            var commandList = new List<int>();
+            var sequenceLength = chipRegisters.CreateCommandListZcheckDac(commandList, actualImpedanceFreq, 128.0);
+            evalBoard.UploadCommandList(commandList, AuxCmdSlot.AuxCmd1, 1);
+            evalBoard.SelectAuxCommandLength(AuxCmdSlot.AuxCmd1, 0, sequenceLength - 1);
+
+            evalBoard.SelectAuxCommandBank(BoardPort.PortA, AuxCmdSlot.AuxCmd1, 1);
+            evalBoard.SelectAuxCommandBank(BoardPort.PortB, AuxCmdSlot.AuxCmd1, 1);
+            evalBoard.SelectAuxCommandBank(BoardPort.PortC, AuxCmdSlot.AuxCmd1, 1);
+            evalBoard.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd1, 1);
+
+            // Select number of periods to measure impedance over
+            int numPeriods = (int)Math.Round(0.020 * actualImpedanceFreq); // Test each channel for at least 20 msec...
+            if (numPeriods < 5) numPeriods = 5; // ...but always measure across no fewer than 5 complete periods
+
+            double period = sampleRate / actualImpedanceFreq;
+            int numBlocks = (int)Math.Ceiling((numPeriods + 2.0) * period / 60.0); // + 2 periods to give time to settle initially
+            if (numBlocks < 2) numBlocks = 2; // need first block for command to switch channels to take effect.
+
+            chipRegisters.SetDspCutoffFreq(DspCutoffFrequency);
+            chipRegisters.SetLowerBandwidth(LowerBandwidth);
+            chipRegisters.SetUpperBandwidth(UpperBandwidth);
+            chipRegisters.EnableDsp(DspEnabled);
+            chipRegisters.EnableZcheck(true);
+
+            sequenceLength = chipRegisters.CreateCommandListRegisterConfig(commandList, false);
+            // Upload version with no ADC calibration to AuxCmd3 RAM Bank 1.
+            evalBoard.UploadCommandList(commandList, AuxCmdSlot.AuxCmd3, 3);
+            evalBoard.SelectAuxCommandLength(AuxCmdSlot.AuxCmd3, 0, sequenceLength - 1);
+            evalBoard.SelectAuxCommandBank(BoardPort.PortA, AuxCmdSlot.AuxCmd3, 3);
+            evalBoard.SelectAuxCommandBank(BoardPort.PortB, AuxCmdSlot.AuxCmd3, 3);
+            evalBoard.SelectAuxCommandBank(BoardPort.PortC, AuxCmdSlot.AuxCmd3, 3);
+            evalBoard.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd3, 3);
+
+            evalBoard.SetContinuousRunMode(false);
+            evalBoard.SetMaxTimeStep(Rhd2000DataBlock.GetSamplesPerDataBlock() * (uint)numBlocks);
+
+            // Create matrices of doubles of size (numStreams x 32 x 3) to store complex amplitudes
+            // of all amplifier channels (32 on each data stream) at three different Cseries values.
+            var numChannels = 32;
+            var numStreams = evalBoard.GetNumEnabledDataStreams();
+            var measuredMagnitude = new double[numStreams][,];
+            var measuredPhase = new double[numStreams][,];
+            for (int i = 0; i < numStreams; i++)
+            {
+                measuredMagnitude[i] = new double[numChannels, 3];
+                measuredPhase[i] = new double[numChannels, 3];
+            }
+
+            // We execute three complete electrode impedance measurements: one each with
+            // Cseries set to 0.1 pF, 1 pF, and 10 pF.  Then we select the best measurement
+            // for each channel so that we achieve a wide impedance measurement range.
+            Queue<Rhd2000DataBlock> dataQueue = new Queue<Rhd2000DataBlock>();
+            for (int capRange = 0; capRange < 3; capRange++)
+            {
+                double cSeries;
+                switch (capRange)
+                {
+                    case 0:
+                        chipRegisters.SetZcheckScale(ZcheckCs.ZcheckCs100fF);
+                        cSeries = 0.1e-12;
+                        break;
+                    case 1:
+                        chipRegisters.SetZcheckScale(ZcheckCs.ZcheckCs1pF);
+                        cSeries = 1.0e-12;
+                        break;
+                    default:
+                        chipRegisters.SetZcheckScale(ZcheckCs.ZcheckCs10pF);
+                        cSeries = 10.0e-12;
+                        break;
+                }
+
+                // Check all 32 channels across all active data streams.
+                for (int channel = 0; channel < numChannels; channel++)
+                {
+                    chipRegisters.SetZcheckChannel(channel);
+                    sequenceLength = chipRegisters.CreateCommandListRegisterConfig(commandList, false);
+                    // Upload version with no ADC calibration to AuxCmd3 RAM Bank 1.
+                    evalBoard.UploadCommandList(commandList, AuxCmdSlot.AuxCmd3, 3);
+
+                    // Start SPI interface and wait for command to complete.
+                    evalBoard.Run();
+                    while (evalBoard.IsRunning()) Thread.Sleep(0);
+                    evalBoard.ReadDataBlocks(numBlocks, dataQueue);
+                    MeasureComplexAmplitude(measuredMagnitude, measuredPhase, null, capRange, channel, numStreams, numBlocks, sampleRate, actualImpedanceFreq, numPeriods);
+
+                    // Advance LED display
+                    ledSequence.MoveNext();
+                }
+            }
+
+            evalBoard.SetContinuousRunMode(false);
+            evalBoard.SetMaxTimeStep(0);
+            evalBoard.Flush();
+
+            // Switch back to flatline
+            evalBoard.SelectAuxCommandBank(BoardPort.PortA, AuxCmdSlot.AuxCmd1, 0);
+            evalBoard.SelectAuxCommandBank(BoardPort.PortB, AuxCmdSlot.AuxCmd1, 0);
+            evalBoard.SelectAuxCommandBank(BoardPort.PortC, AuxCmdSlot.AuxCmd1, 0);
+            evalBoard.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd1, 0);
+            evalBoard.SelectAuxCommandLength(AuxCmdSlot.AuxCmd1, 0, 1);
+            UpdateRegisterConfiguration();
+
+            // Turn off LED.
+            ledSequence.Dispose();
+        }
+
+        void MeasureComplexAmplitude(double[][,] measuredMagnitude, double[][,] measuredPhase, int[][,] amplifierData, int capIndex, int chipChannel, int numStreams, int numBlocks, double sampleRate, double frequency, int numPeriods)
+        {
+            var period = (int)Math.Round(sampleRate / frequency);
+            var startIndex = 0;
+            var endIndex = startIndex + numPeriods * period - 1;
+
+            // Move the measurement window to the end of the waveform to ignore start-up transient.
+            while (endIndex < Rhd2000DataBlock.GetSamplesPerDataBlock() * numBlocks - period)
+            {
+                startIndex += period;
+                endIndex += period;
+            }
+
+            for (int stream = 0; stream < numStreams; stream++)
+            {
+                double iComponent, qComponent;
+                // Measure real (iComponent) and imaginary (qComponent) amplitude of frequency component.
+                AmplitudeOfFreqComponent(out iComponent, out qComponent, null, startIndex, endIndex, sampleRate, frequency);
+                // Calculate magnitude and phase from real (I) and imaginary (Q) components.
+                measuredMagnitude[stream][chipChannel, capIndex] = Math.Sqrt(iComponent * iComponent + qComponent * qComponent);
+                measuredPhase[stream][chipChannel, capIndex] = Math.Atan2(qComponent, iComponent);
+            }
+        }
+
+        void AmplitudeOfFreqComponent(out double realComponent, out double imagComponent, double[] data, int startIndex, int endIndex, double sampleRate, double frequency)
+        {
+            var length = endIndex - startIndex + 1;
+            var k = 2 * Math.PI * frequency / sampleRate; // precalculate for speed
+
+            // Perform correlation with sine and cosine waveforms.
+            var meanI = 0.0;
+            var meanQ = 0.0;
+            for (int t = startIndex; t <= endIndex; ++t)
+            {
+                meanI += data[t] * Math.Cos(k * t);
+                meanQ += data[t] * -1.0 * Math.Sin(k * t);
+            }
+            meanI /= length;
+            meanQ /= length;
+
+            realComponent = 2.0 * meanI;
+            imagComponent = 2.0 * meanQ;
+        }
+
         Rhd2000DataBlock RunSingleCommandSequence()
         {
             // Start SPI interface.
@@ -380,11 +565,10 @@ namespace Bonsai.Ephys
                 {
                     var blocksToRead = GetDataBlockReadCount(SampleRate);
                     var fifoCapacity = Rhythm.Net.Rhd2000EvalBoard.FifoCapacityInWords();
-                    var ledArray = new[] { 1, 0, 0, 0, 0, 0, 0, 0 };
-                    var ledIndex = 0;
+                    var ledSequence = LedSequence();
 
                     var queue = new Queue<Rhd2000DataBlock>();
-                    evalBoard.SetLedDisplay(ledArray);
+                    ledSequence.MoveNext();
                     while (running)
                     {
                         if (evalBoard.ReadDataBlocks(blocksToRead, queue))
@@ -396,16 +580,11 @@ namespace Bonsai.Ephys
                                 observer.OnNext(new Rhd2000DataFrame(dataBlock, bufferPercentageCapacity));
                             }
                             queue.Clear();
-
-                            ledArray[ledIndex] = 0;
-                            ledIndex = (ledIndex + 1) % ledArray.Length;
-                            ledArray[ledIndex] = 1;
-                            evalBoard.SetLedDisplay(ledArray);
+                            ledSequence.MoveNext();
                         }
                     }
 
-                    ledArray[ledIndex] = 0;
-                    evalBoard.SetLedDisplay(ledArray);
+                    ledSequence.Dispose();
                 });
 
                 thread.Start();
