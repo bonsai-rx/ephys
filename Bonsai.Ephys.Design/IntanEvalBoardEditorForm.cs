@@ -29,10 +29,13 @@ namespace Bonsai.Ephys.Design
             UInt16[] auxFrame = new UInt16[750];
             double meanI, meanQ, amplitude;
 
-            using (var connection = Source.Load())
+            int firmwareID1 = 0;
+            int firmwareID2 = 0;
+            int firmwareID3 = 0;
+            var usbSource = Source.UsbSource;
+            usbSource.Open(ref firmwareID1, ref firmwareID2, ref firmwareID3);
+            try
             {
-                var usbSource = Source.UsbSource;
-
                 // Enable electrode impedance test mode
                 usbSource.ZCheckOn();
 
@@ -140,6 +143,7 @@ namespace Bonsai.Ephys.Design
                     impedanceListView.Items.Add(amplifier);
                 }
             }
+            finally { usbSource.Close(); }
         }
     }
 }

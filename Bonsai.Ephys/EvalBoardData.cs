@@ -8,14 +8,14 @@ namespace Bonsai.Ephys
 {
     public class EvalBoardData
     {
-        public EvalBoardData(CvMat dataFrame, CvMat auxFrame)
+        public EvalBoardData(Mat dataFrame, Mat auxFrame)
         {
             DataFrame = dataFrame;
             AuxFrame = auxFrame;
         }
 
-        public CvMat DataFrame { get; private set; }
+        public Mat DataFrame { get; private set; }
 
-        public CvMat AuxFrame { get; private set; }
+        public Mat AuxFrame { get; private set; }
     }
 }

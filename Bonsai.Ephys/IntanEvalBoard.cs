@@ -15,82 +15,30 @@ namespace Bonsai.Ephys
     public class IntanEvalBoard : Source<EvalBoardData>
     {
         bool settle;
-        IntanUsbSource source = new IntanUsbSource();
+        IntanUsbSource usbSource = new IntanUsbSource();
+        IObservable<EvalBoardData> source;
 
-        [XmlIgnore]
-        [Browsable(false)]
-        public IntanUsbSource UsbSource
+        public IntanEvalBoard()
         {
-            get { return source; }
-        }
-
-        [XmlIgnore]
-        public bool AmplifierSettle
-        {
-            get { return settle; }
-            set
+            source = Observable.Create<EvalBoardData>(observer =>
             {
-                settle = value;
-                if (settle) source.SettleOn();
-                else source.SettleOff();
-            }
-        }
+                settle = false;
+                int firmwareID1 = 0;
+                int firmwareID2 = 0;
+                int firmwareID3 = 0;
+                usbSource.Open(ref firmwareID1, ref firmwareID2, ref firmwareID3);
 
-        public bool HighPassFilter
-        {
-            get { return source.EnableHPF; }
-            set { source.EnableHPF = value; }
-        }
-
-        public double HighPassFilterCutoff
-        {
-            get { return source.FHPF; }
-            set { source.FHPF = value; }
-        }
-
-        public bool NotchFilter
-        {
-            get { return source.EnableNotch; }
-            set { source.EnableNotch = value; }
-        }
-
-        public double NotchFrequency
-        {
-            get { return source.FNotch; }
-            set { source.FNotch = value; }
-        }
-
-        public override IDisposable Load()
-        {
-            settle = false;
-            int firmwareID1 = 0;
-            int firmwareID2 = 0;
-            int firmwareID3 = 0;
-            source.Open(ref firmwareID1, ref firmwareID2, ref firmwareID3);
-            return base.Load();
-        }
-
-        protected override void Unload()
-        {
-            source.Close();
-            base.Unload();
-        }
-
-        protected override IObservable<EvalBoardData> Generate()
-        {
-            return Observable.Create<EvalBoardData>(observer =>
-            {
                 var running = true;
-                source.Start();
+                usbSource.Start();
                 var thread = new Thread(() =>
                 {
                     while (running)
                     {
-                        var data = source.ReadUsbData();
+                        var data = usbSource.ReadUsbData();
                         if (data != null)
                         {
-                            var dataOutput = CvMat.FromArray(data.DataFrame);
-                            var auxOutput = CvMat.FromArray(data.AuxFrame);
+                            var dataOutput = Mat.FromArray(data.DataFrame);
+                            var auxOutput = Mat.FromArray(data.AuxFrame);
                             observer.OnNext(new EvalBoardData(dataOutput, auxOutput));
                         }
                     }
@@ -101,9 +49,60 @@ namespace Bonsai.Ephys
                 {
                     running = false;
                     if (thread != Thread.CurrentThread) thread.Join();
-                    source.Stop();
+                    usbSource.Stop();
+                    usbSource.Close();
                 };
-            });
+            })
+            .PublishReconnectable()
+            .RefCount();
+        }
+
+        [XmlIgnore]
+        [Browsable(false)]
+        public IntanUsbSource UsbSource
+        {
+            get { return usbSource; }
+        }
+
+        [XmlIgnore]
+        public bool AmplifierSettle
+        {
+            get { return settle; }
+            set
+            {
+                settle = value;
+                if (settle) usbSource.SettleOn();
+                else usbSource.SettleOff();
+            }
+        }
+
+        public bool HighPassFilter
+        {
+            get { return usbSource.EnableHPF; }
+            set { usbSource.EnableHPF = value; }
+        }
+
+        public double HighPassFilterCutoff
+        {
+            get { return usbSource.FHPF; }
+            set { usbSource.FHPF = value; }
+        }
+
+        public bool NotchFilter
+        {
+            get { return usbSource.EnableNotch; }
+            set { usbSource.EnableNotch = value; }
+        }
+
+        public double NotchFrequency
+        {
+            get { return usbSource.FNotch; }
+            set { usbSource.FNotch = value; }
+        }
+
+        public override IObservable<EvalBoardData> Generate()
+        {
+            return source;
         }
     }
 }

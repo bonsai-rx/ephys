@@ -13,6 +13,7 @@ namespace Bonsai.Ephys
 {
     public class Rhd2000EvalBoard : Source<Rhd2000DataFrame>
     {
+        IObservable<Rhd2000DataFrame> source;
         Rhd2000Registers chipRegisters;
         Rhythm.Net.Rhd2000EvalBoard evalBoard;
         double cableLengthPortA;
@@ -28,6 +29,53 @@ namespace Bonsai.Ephys
             UpperBandwidth = 7500.0;
             DspCutoffFrequency = 1.0;
             DspEnabled = true;
+
+            source = Observable.Create<Rhd2000DataFrame>(observer =>
+            {
+                Load();
+                var running = true;
+                evalBoard.SetContinuousRunMode(true);
+                evalBoard.Run();
+                var thread = new Thread(() =>
+                {
+                    var blocksToRead = GetDataBlockReadCount(SampleRate);
+                    var fifoCapacity = Rhythm.Net.Rhd2000EvalBoard.FifoCapacityInWords();
+                    var ledSequence = LedSequence();
+
+                    var queue = new Queue<Rhd2000DataBlock>();
+                    ledSequence.MoveNext();
+                    while (running)
+                    {
+                        if (evalBoard.ReadDataBlocks(blocksToRead, queue))
+                        {
+                            var wordsInFifo = evalBoard.NumWordsInFifo();
+                            var bufferPercentageCapacity = 100.0 * wordsInFifo / fifoCapacity;
+                            foreach (var dataBlock in queue)
+                            {
+                                observer.OnNext(new Rhd2000DataFrame(dataBlock, bufferPercentageCapacity));
+                            }
+                            queue.Clear();
+                            ledSequence.MoveNext();
+                        }
+                    }
+
+                    ledSequence.Dispose();
+                });
+
+                thread.Start();
+                return () =>
+                {
+                    running = false;
+                    if (thread != Thread.CurrentThread) thread.Join();
+                    evalBoard.SetContinuousRunMode(false);
+                    evalBoard.SetMaxTimeStep(0);
+                    evalBoard.Flush();
+                    evalBoard = null;
+                    chipRegisters = null;
+                };
+            })
+            .PublishReconnectable()
+            .RefCount();
         }
 
         [FileNameFilter("BIT Files|*.bit")]
@@ -519,7 +567,7 @@ namespace Bonsai.Ephys
             }
         }
 
-        public override IDisposable Load()
+        private void Load()
         {
             evalBoard = new Rhythm.Net.Rhd2000EvalBoard();
 
@@ -544,59 +592,11 @@ namespace Bonsai.Ephys
             // Find amplifier chips connected to interface board and compute their
             // optimal delay parameters.
             ScanConnectedAmplifiers();
-            return base.Load();
         }
 
-        protected override void Unload()
+        public override IObservable<Rhd2000DataFrame> Generate()
         {
-            evalBoard = null;
-            chipRegisters = null;
-            base.Unload();
-        }
-
-        protected override IObservable<Rhd2000DataFrame> Generate()
-        {
-            return Observable.Create<Rhd2000DataFrame>(observer =>
-            {
-                var running = true;
-                evalBoard.SetContinuousRunMode(true);
-                evalBoard.Run();
-                var thread = new Thread(() =>
-                {
-                    var blocksToRead = GetDataBlockReadCount(SampleRate);
-                    var fifoCapacity = Rhythm.Net.Rhd2000EvalBoard.FifoCapacityInWords();
-                    var ledSequence = LedSequence();
-
-                    var queue = new Queue<Rhd2000DataBlock>();
-                    ledSequence.MoveNext();
-                    while (running)
-                    {
-                        if (evalBoard.ReadDataBlocks(blocksToRead, queue))
-                        {
-                            var wordsInFifo = evalBoard.NumWordsInFifo();
-                            var bufferPercentageCapacity = 100.0 * wordsInFifo / fifoCapacity;
-                            foreach (var dataBlock in queue)
-                            {
-                                observer.OnNext(new Rhd2000DataFrame(dataBlock, bufferPercentageCapacity));
-                            }
-                            queue.Clear();
-                            ledSequence.MoveNext();
-                        }
-                    }
-
-                    ledSequence.Dispose();
-                });
-
-                thread.Start();
-                return () =>
-                {
-                    running = false;
-                    if (thread != Thread.CurrentThread) thread.Join();
-                    evalBoard.SetContinuousRunMode(false);
-                    evalBoard.SetMaxTimeStep(0);
-                    evalBoard.Flush();
-                };
-            });
+            return source;
         }
     }
 }
