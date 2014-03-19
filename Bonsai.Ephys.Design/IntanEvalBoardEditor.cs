@@ -16,7 +16,7 @@ namespace Bonsai.Ephys.Design
         {
             if (provider != null)
             {
-                var editorService = (IWorkflowEditorService)provider.GetService(typeof(IWorkflowEditorService));
+                var editorService = (IWorkflowEditorState)provider.GetService(typeof(IWorkflowEditorState));
                 if (editorService != null && !editorService.WorkflowRunning)
                 {
                     if (editorForm == null)
