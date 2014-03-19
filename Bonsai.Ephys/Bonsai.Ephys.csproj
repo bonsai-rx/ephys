@@ -58,6 +58,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdcType.cs" />
     <Compile Include="IntanEvalBoard.cs" />
     <Compile Include="EvalBoardData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -66,6 +67,7 @@
     <Compile Include="Rhd2000EvalBoard.cs" />
     <Compile Include="IntanUsbData.cs" />
     <Compile Include="IntanUsbSource.cs" />
+    <Compile Include="AdcScale.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Externals\Bonsai\Bonsai.Core\Bonsai.Core.csproj">
