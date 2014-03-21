@@ -70,6 +70,7 @@ namespace Bonsai.Ephys
                     evalBoard.SetContinuousRunMode(false);
                     evalBoard.SetMaxTimeStep(0);
                     evalBoard.Flush();
+                    evalBoard.Close();
                     evalBoard = null;
                     chipRegisters = null;
                 };
