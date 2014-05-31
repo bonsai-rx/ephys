@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.props" Condition="Exists('..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -36,8 +37,20 @@
     <BuildPackage>true</BuildPackage>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Bonsai.Core">
+      <HintPath>..\packages\Bonsai.Core.2.0.0\lib\net45\Bonsai.Core.dll</HintPath>
+    </Reference>
     <Reference Include="FTD2XX_NET">
-      <HintPath>..\Externals\FTD2XX\FTD2XX_NET.dll</HintPath>
+      <HintPath>..\packages\FTD2XX_NET.1.0.14\lib\net40\FTD2XX_NET.dll</HintPath>
+    </Reference>
+    <Reference Include="libFrontPanel-csharp">
+      <HintPath>..\packages\Rhythm.Net.1.1.1\lib\net40\libFrontPanel-csharp.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenCV.Net">
+      <HintPath>..\packages\OpenCV.Net.3.2.2\lib\net40\OpenCV.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="Rhythm.Net">
+      <HintPath>..\packages\Rhythm.Net.1.1.1\lib\net40\Rhythm.Net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -70,20 +83,6 @@
     <Compile Include="AdcScale.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Externals\Bonsai\Bonsai.Core\Bonsai.Core.csproj">
-      <Project>{e4d03ba3-54a2-4ff8-9dc6-52ba4cc14fed}</Project>
-      <Name>Bonsai.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Externals\Bonsai\Externals\OpenCV.Net\OpenCV.Net\OpenCV.Net.csproj">
-      <Project>{D07280E0-B436-4E29-956C-AC881E7C9A82}</Project>
-      <Name>OpenCV.Net</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Externals\Rhythm.Net\Rhythm.Net\Rhythm.Net.csproj">
-      <Project>{7E9F4C27-C75B-419B-BD62-D5E1D87C3C80}</Project>
-      <Name>Rhythm.Net</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="packages.config" />
     <None Include="Bonsai.Ephys.nuspec">
       <SubType>Designer</SubType>
@@ -96,6 +95,16 @@
     </PostBuildEvent>
   </PropertyGroup>
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.props'))" />
+    <Error Condition="!Exists('..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.targets'))" />
+    <Error Condition="!Exists('..\packages\Rhythm.Net.1.1.1\build\net40\Rhythm.Net.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Rhythm.Net.1.1.1\build\net40\Rhythm.Net.targets'))" />
+  </Target>
+  <Import Project="..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.targets" Condition="Exists('..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.targets')" />
+  <Import Project="..\packages\Rhythm.Net.1.1.1\build\net40\Rhythm.Net.targets" Condition="Exists('..\packages\Rhythm.Net.1.1.1\build\net40\Rhythm.Net.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
