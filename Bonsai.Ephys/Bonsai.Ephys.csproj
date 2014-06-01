@@ -43,14 +43,16 @@
     <Reference Include="FTD2XX_NET">
       <HintPath>..\packages\FTD2XX_NET.1.0.14\lib\net40\FTD2XX_NET.dll</HintPath>
     </Reference>
-    <Reference Include="libFrontPanel-csharp">
-      <HintPath>..\packages\Rhythm.Net.1.1.1\lib\net40\libFrontPanel-csharp.dll</HintPath>
+    <Reference Include="libFrontPanel-csharp, Version=1.0.4700.20320, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Rhythm.Net.1.4.0\lib\net40\libFrontPanel-csharp.dll</HintPath>
     </Reference>
     <Reference Include="OpenCV.Net">
       <HintPath>..\packages\OpenCV.Net.3.2.2\lib\net40\OpenCV.Net.dll</HintPath>
     </Reference>
-    <Reference Include="Rhythm.Net">
-      <HintPath>..\packages\Rhythm.Net.1.1.1\lib\net40\Rhythm.Net.dll</HintPath>
+    <Reference Include="Rhythm.Net, Version=1.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Rhythm.Net.1.4.0\lib\net40\Rhythm.Net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -101,10 +103,10 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.props'))" />
     <Error Condition="!Exists('..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.targets'))" />
-    <Error Condition="!Exists('..\packages\Rhythm.Net.1.1.1\build\net40\Rhythm.Net.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Rhythm.Net.1.1.1\build\net40\Rhythm.Net.targets'))" />
+    <Error Condition="!Exists('..\packages\Rhythm.Net.1.4.0\build\net40\Rhythm.Net.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Rhythm.Net.1.4.0\build\net40\Rhythm.Net.targets'))" />
   </Target>
   <Import Project="..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.targets" Condition="Exists('..\packages\OpenCV.Net.3.2.2\build\net40\OpenCV.Net.targets')" />
-  <Import Project="..\packages\Rhythm.Net.1.1.1\build\net40\Rhythm.Net.targets" Condition="Exists('..\packages\Rhythm.Net.1.1.1\build\net40\Rhythm.Net.targets')" />
+  <Import Project="..\packages\Rhythm.Net.1.4.0\build\net40\Rhythm.Net.targets" Condition="Exists('..\packages\Rhythm.Net.1.4.0\build\net40\Rhythm.Net.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

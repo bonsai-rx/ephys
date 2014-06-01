@@ -13,6 +13,9 @@ namespace Bonsai.Ephys
 {
     public class Rhd2000EvalBoard : Source<Rhd2000DataFrame>
     {
+        const int ChipIdRhd2132 = 1;
+        const int ChipIdRhd2216 = 2;
+        const int ChipIdRhd2164 = 4;
         IObservable<Rhd2000DataFrame> source;
         Rhd2000Registers chipRegisters;
         Rhythm.Net.Rhd2000EvalBoard evalBoard;
@@ -334,8 +337,8 @@ namespace Bonsai.Ephys
             evalBoard.SetDataSource(6, BoardDataSource.PortD1);
             evalBoard.SetDataSource(7, BoardDataSource.PortD2);
 
-            var numDataStreams = Rhythm.Net.Rhd2000EvalBoard.MaxNumDataStreams();
-            for (int i = 0; i < numDataStreams; i++)
+            var maxNumDataStreams = Rhythm.Net.Rhd2000EvalBoard.MaxNumDataStreams();
+            for (int i = 0; i < maxNumDataStreams; i++)
             {
                 evalBoard.EnableDataStream(i, true);
             }
@@ -353,11 +356,14 @@ namespace Bonsai.Ephys
 
             // Run SPI command sequence at all 16 possible FPGA MISO delay settings
             // to find optimum delay for each SPI interface cable.
-            var optimumDelays = new int[numDataStreams];
-            var secondDelays = new int[numDataStreams];
-            var goodDelayCounts = new int[numDataStreams];
+            var chipId = new int[maxNumDataStreams];
+            var portIndex = new int[maxNumDataStreams];
+            var optimumDelays = new int[maxNumDataStreams];
+            var secondDelays = new int[maxNumDataStreams];
+            var goodDelayCounts = new int[maxNumDataStreams];
             for (int i = 0; i < optimumDelays.Length; i++)
             {
+                portIndex[i] = i / 2;
                 optimumDelays[i] = -1;
                 secondDelays[i] = -1;
                 goodDelayCounts[i] = 0;
@@ -380,6 +386,7 @@ namespace Bonsai.Ephys
                     var id = ReadDeviceId(dataBlock, stream);
                     if (id > 0)
                     {
+                        chipId[stream] = id;
                         goodDelayCounts[stream]++;
                         switch (goodDelayCounts[stream])
                         {
@@ -391,12 +398,74 @@ namespace Bonsai.Ephys
                 }
             }
 
-            // Now, disable data streams where we did not find chips present.
-            for (int stream = 0; stream < optimumDelays.Length; stream++)
+            // Now that we know which RHD2000 amplifier chips are plugged into each SPI port,
+            // add up the total number of amplifier channels on each port and calculate the number
+            // of data streams necessary to convey this data over the USB interface.
+            var numStreamsRequired = 0;
+            var rhd2216ChipPresent = false;
+            var numChannelsOnPort = new int[4];
+            for (int stream = 0; stream < chipId.Length; ++stream)
             {
-                var enabled = optimumDelays[stream] >= 0;
-                evalBoard.EnableDataStream(stream, enabled);
-                if (!enabled) optimumDelays[stream] = 0;
+                switch (chipId[stream])
+                {
+                    case ChipIdRhd2216:
+                        numStreamsRequired++;
+                        if (numStreamsRequired <= maxNumDataStreams)
+                        {
+                            numChannelsOnPort[portIndex[stream]] += 16;
+                        }
+                        rhd2216ChipPresent = true;
+                        break;
+                    case ChipIdRhd2132:
+                        numStreamsRequired++;
+                        if (numStreamsRequired <= maxNumDataStreams)
+                        {
+                            numChannelsOnPort[portIndex[stream]] += 32;
+                        }
+                        break;
+                    case ChipIdRhd2164:
+                        numStreamsRequired += 2;
+                        if (numStreamsRequired <= maxNumDataStreams)
+                        {
+                            numChannelsOnPort[portIndex[stream]] += 64;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            // If the user plugs in more chips than the USB interface can support, throw an exception
+            if (numStreamsRequired > maxNumDataStreams)
+            {
+                var capacityExceededMessage = "Capacity of USB Interface Exceeded. This RHD2000 USB interface board can support 256 only amplifier channels.";
+                if (rhd2216ChipPresent) capacityExceededMessage += " (Each RHD2216 chip counts as 32 channels for USB interface purposes.)";
+                throw new InvalidOperationException(capacityExceededMessage);
+            }
+
+            // Reconfigure USB data streams in consecutive order to accommodate all connected chips.
+            int activeStream = 0;
+            for (int stream = 0; stream < maxNumDataStreams; ++stream)
+            {
+                if (chipId[stream] > 0)
+                {
+                    evalBoard.EnableDataStream(activeStream, true);
+                    evalBoard.SetDataSource(activeStream, (BoardDataSource)stream);
+                    if (chipId[stream] == ChipIdRhd2164)
+                    {
+                        evalBoard.EnableDataStream(activeStream + 1, true);
+                        evalBoard.SetDataSource(activeStream + 1, (BoardDataSource)(stream + maxNumDataStreams));
+                        activeStream += 2;
+                    }
+                    else activeStream++;
+                }
+            }
+
+            // Now, disable data streams where we did not find chips present.
+            for (; activeStream < optimumDelays.Length; activeStream++)
+            {
+                evalBoard.EnableDataStream(activeStream, false);
+                optimumDelays[activeStream] = 0;
             }
 
             // Set cable delay settings that yield good communication with each
@@ -526,8 +595,7 @@ namespace Bonsai.Ephys
                 evalBoard.SelectDacDataChannel(i, 0);
             }
 
-            evalBoard.SetDacManual(DacManual.DacManual1, 32768);
-            evalBoard.SetDacManual(DacManual.DacManual2, 32768);
+            evalBoard.SetDacManual(32768);
             evalBoard.SetDacGain(0);
             evalBoard.SetAudioNoiseSuppress(0);
         }
@@ -575,24 +643,33 @@ namespace Bonsai.Ephys
             // Open Opal Kelly XEM6010 board.
             evalBoard.Open();
 
-            // Load Rhythm FPGA configuration bitfile (provided by Intan Technologies).
-            evalBoard.UploadFpgaBitfile(BitFileName);
+            try
+            {
+                // Load Rhythm FPGA configuration bitfile (provided by Intan Technologies).
+                evalBoard.UploadFpgaBitfile(BitFileName);
 
-            // Initialize interface board.
-            evalBoard.Initialize();
+                // Initialize interface board.
+                evalBoard.Initialize();
 
-            // Set sample rate and upload all auxiliary SPI command sequences.
-            ChangeSampleRate(SampleRate);
+                // Set sample rate and upload all auxiliary SPI command sequences.
+                ChangeSampleRate(SampleRate);
 
-            // Run ADC calibration
-            RunCalibration();
+                // Run ADC calibration
+                RunCalibration();
 
-            // Set default configuration for all eight DACs on interface board.
-            SetDacDefaultConfiguration();
+                // Set default configuration for all eight DACs on interface board.
+                SetDacDefaultConfiguration();
 
-            // Find amplifier chips connected to interface board and compute their
-            // optimal delay parameters.
-            ScanConnectedAmplifiers();
+                // Find amplifier chips connected to interface board and compute their
+                // optimal delay parameters.
+                ScanConnectedAmplifiers();
+            }
+            catch
+            {
+                // Close interface board in case of configuration errors
+                evalBoard.Close();
+                throw;
+            }
         }
 
         public override IObservable<Rhd2000DataFrame> Generate()
