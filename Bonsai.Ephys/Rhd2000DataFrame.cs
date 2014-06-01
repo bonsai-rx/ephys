@@ -47,6 +47,7 @@ namespace Bonsai.Ephys
 
         Mat GetStreamData(int[][,] data)
         {
+            if (data.Length == 0) return null;
             var numChannels = data[0].GetLength(0);
             var numSamples = data[0].GetLength(1);
 
