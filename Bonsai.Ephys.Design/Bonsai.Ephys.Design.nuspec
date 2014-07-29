@@ -15,7 +15,7 @@
     <copyright>Gonçalo Lopes © 2014</copyright>
     <tags>Bonsai Rhythm Ephys Electrophysiology</tags>
     <dependencies>
-      <dependency id="Bonsai.Ephys" version="2.0.0-rc1" />
+      <dependency id="Bonsai.Ephys" version="2.0.0" />
     </dependencies>
   </metadata>
 </package>
