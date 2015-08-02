@@ -11,8 +11,7 @@
     <iconUrl>https://bitbucket.org/horizongir/bonsai/raw/7aacc64dc4647e57362ab310238591dc197fef0d/Resources/Bonsai.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
-    <releaseNotes>First public prerelease of ephys data acquisition infrastructure for Bonsai.</releaseNotes>
-    <copyright>Gonçalo Lopes © 2014</copyright>
+    <copyright>Gonçalo Lopes © 2015</copyright>
     <tags>Bonsai Rhythm Ephys Electrophysiology</tags>
   </metadata>
 </package>
