@@ -13,7 +13,7 @@ namespace Bonsai.Ephys
         {
             Timestamp = dataBlock.Timestamp;
             AmplifierData = GetStreamData(dataBlock.AmplifierData);
-            AuxiliaryData = GetStreamData(dataBlock.AuxiliaryData);
+            AuxiliaryData = GetAuxiliaryData(dataBlock.AuxiliaryData);
             BoardAdcData = GetAdcData(dataBlock.BoardAdcData);
             TtlIn = GetTtlData(dataBlock.TtlIn);
             TtlOut = GetTtlData(dataBlock.TtlOut);
@@ -62,6 +62,21 @@ namespace Bonsai.Ephys
             }
 
             return output;
+        }
+
+        Mat GetAuxiliaryData(int[][,] data)
+        {
+            const int AuxDataChannels = 4;
+            const int OutputChannels = AuxDataChannels - 1;
+            if (data.Length == 0) return null;
+            var numSamples = data[0].GetLength(1) / AuxDataChannels;
+            var auxData = new short[OutputChannels * numSamples];
+            for (int i = 0; i < auxData.Length; i++)
+            {
+                auxData[i] = (short)data[0][1, i % numSamples * AuxDataChannels + i / numSamples + 1];
+            }
+
+            return Mat.FromArray(auxData, OutputChannels, numSamples, Depth.U16, 1);
         }
 
         public uint[] Timestamp { get; private set; }
