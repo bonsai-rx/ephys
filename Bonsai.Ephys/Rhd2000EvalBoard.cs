@@ -297,9 +297,10 @@ namespace Bonsai.Ephys
             return dataBlock;
         }
 
-        int ReadDeviceId(Rhd2000DataBlock dataBlock, int stream)
+        int ReadDeviceId(Rhd2000DataBlock dataBlock, int stream, out int register59Value)
         {
-            // First, check ROM registers 32-36 to verify that they hold 'INTAN'.
+            // First, check ROM registers 32-36 to verify that they hold 'INTAN', and
+            // the initial chip name ROM registers 24-26 that hold 'RHD'.
             // This is just used to verify that we are getting good data over the SPI
             // communication channel.
             var intanChipPresent = (
@@ -307,16 +308,21 @@ namespace Bonsai.Ephys
                 (char)dataBlock.AuxiliaryData[stream][2, 33] == 'N' &&
                 (char)dataBlock.AuxiliaryData[stream][2, 34] == 'T' &&
                 (char)dataBlock.AuxiliaryData[stream][2, 35] == 'A' &&
-                (char)dataBlock.AuxiliaryData[stream][2, 36] == 'N');
+                (char)dataBlock.AuxiliaryData[stream][2, 36] == 'N' &&
+                (char)dataBlock.AuxiliaryData[stream][2, 24] == 'R' &&
+                (char)dataBlock.AuxiliaryData[stream][2, 25] == 'H' &&
+                (char)dataBlock.AuxiliaryData[stream][2, 26] == 'D');
 
             // If the SPI communication is bad, return -1.  Otherwise, return the Intan
             // chip ID number stored in ROM regstier 63.
             if (!intanChipPresent)
             {
+                register59Value = -1;
                 return -1;
             }
             else
             {
+                register59Value = dataBlock.AuxiliaryData[stream][2, 23]; // Register 59
                 return dataBlock.AuxiliaryData[stream][2, 19]; // chip ID (Register 63)
             }
         }
@@ -383,7 +389,8 @@ namespace Bonsai.Ephys
                 // Record delay settings that yield good communication with the chip.
                 for (int stream = 0; stream < optimumDelays.Length; stream++)
                 {
-                    var id = ReadDeviceId(dataBlock, stream);
+                    int register59Value;
+                    var id = ReadDeviceId(dataBlock, stream, out register59Value);
                     if (id > 0)
                     {
                         chipId[stream] = id;
