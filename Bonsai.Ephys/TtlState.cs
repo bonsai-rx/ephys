@@ -1,6 +1,7 @@
 ﻿using OpenCV.Net;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Bonsai.Ephys
 {
+    [Description("Demultiplexes the TTL digital state into independent channels.")]
     public class TtlState : Transform<Mat, Mat>
     {
         public override IObservable<Mat> Process(IObservable<Mat> source)

@@ -1,6 +1,7 @@
 ﻿using OpenCV.Net;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Text;
@@ -8,8 +9,10 @@ using System.Threading.Tasks;
 
 namespace Bonsai.Ephys
 {
+    [Description("Rescales ADC values sampled from Rhd2000 data blocks into SI voltage units.")]
     public class AdcScale : Transform<Mat, Mat>
     {
+        [Description("The type of the ADC from which the input samples were taken.")]
         public AdcType AdcType { get; set; }
 
         public override IObservable<Mat> Process(IObservable<Mat> source)

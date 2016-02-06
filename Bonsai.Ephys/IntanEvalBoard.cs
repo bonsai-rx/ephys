@@ -11,6 +11,7 @@ using System.ComponentModel;
 
 namespace Bonsai.Ephys
 {
+    [Description("Produces a sequence of buffered samples acquired from a RHA2000-EVAL board.")]
     [Editor("Bonsai.Ephys.Design.IntanEvalBoardEditor, Bonsai.Ephys.Design", typeof(ComponentEditor))]
     public class IntanEvalBoard : Source<EvalBoardData>
     {
@@ -65,6 +66,7 @@ namespace Bonsai.Ephys
         }
 
         [XmlIgnore]
+        [Description("Used online to reset the state of the amplifiers.")]
         public bool AmplifierSettle
         {
             get { return settle; }
@@ -76,24 +78,28 @@ namespace Bonsai.Ephys
             }
         }
 
+        [Description("Indicates whether the software high-pass filter is enabled.")]
         public bool HighPassFilter
         {
             get { return usbSource.EnableHPF; }
             set { usbSource.EnableHPF = value; }
         }
 
+        [Description("The cutoff frequency of the software high-pass filter.")]
         public double HighPassFilterCutoff
         {
             get { return usbSource.FHPF; }
             set { usbSource.FHPF = value; }
         }
 
+        [Description("Indicates whether the software notch filter is enabled.")]
         public bool NotchFilter
         {
             get { return usbSource.EnableNotch; }
             set { usbSource.EnableNotch = value; }
         }
 
+        [Description("The frequency of the software notch filter.")]
         public double NotchFrequency
         {
             get { return usbSource.FNotch; }
