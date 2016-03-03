@@ -19,6 +19,7 @@ namespace Bonsai.Ephys
         const uint ExtendedHeaderSize = 32u;
         static readonly double[] DefaultThreshold = new[] { 0.0 };
         static readonly byte[] LabelHeaderReservedBytes = new byte[6];
+        static readonly byte[] FilterHeaderReservedBytes = new byte[2];
 
         public NevWriter()
         {
@@ -57,6 +58,7 @@ namespace Bonsai.Ephys
                 var threshold = thresholdValues.Length > 1 ? thresholdValues[i] : thresholdValues[0];
                 WriteNeuralEventWaveformHeader(writer, id, threshold, bytesPerWaveform, spikeWidth);
                 WriteNeuralEventLabelHeader(writer, id, label);
+                WriteNeuralEventFilterHeader(writer, id);
             }
             return writer;
         }
@@ -174,6 +176,28 @@ namespace Bonsai.Ephys
             writer.Write(labelField);
             // Reserved bytes
             writer.Write(LabelHeaderReservedBytes);
+        }
+
+        void WriteNeuralEventFilterHeader(BinaryWriter writer, int electrodeId)
+        {
+            // Packet ID
+            writer.Write(new[] { 'N', 'E', 'U', 'E', 'V', 'F', 'L', 'T' });
+            // Electrode ID
+            writer.Write((ushort)electrodeId);
+            // High frequency corner (mHz)
+            writer.Write(0u);
+            // High frequency order
+            writer.Write(0u);
+            // High filter type (0 = none; 1 = butterworth)
+            writer.Write((ushort)0);
+            // Low frequency corner (mHz)
+            writer.Write(0u);
+            // Low frequency order
+            writer.Write(0u);
+            // Low filter type (0 = none; 1 = butterworth)
+            writer.Write((ushort)0);
+            // Reserved bytes
+            writer.Write(FilterHeaderReservedBytes);
         }
 
         void WriteSpikeEventDataPacket(BinaryWriter writer, SpikeWaveform spike, byte[] data)
