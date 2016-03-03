@@ -18,6 +18,7 @@ namespace Bonsai.Ephys
         const uint BasicHeaderSize = 336u;
         const uint ExtendedHeaderSize = 32u;
         static readonly double[] DefaultThreshold = new[] { 0.0 };
+        static readonly byte[] LabelHeaderReservedBytes = new byte[6];
 
         public NevWriter()
         {
@@ -51,8 +52,11 @@ namespace Bonsai.Ephys
             WriteBasicHeader(writer, (uint)channels);
             for (int i = 0; i < channels; i++)
             {
+                var id = i + 1;
+                var label = "chan" + id;
                 var threshold = thresholdValues.Length > 1 ? thresholdValues[i] : thresholdValues[0];
-                WriteNeuralEventWaveformHeader(writer, i + 1, threshold, bytesPerWaveform, spikeWidth);
+                WriteNeuralEventWaveformHeader(writer, id, threshold, bytesPerWaveform, spikeWidth);
+                WriteNeuralEventLabelHeader(writer, id, label);
             }
             return writer;
         }
@@ -83,7 +87,8 @@ namespace Bonsai.Ephys
             // Additional flags (bit 0 cleared)
             writer.Write((ushort)0);
             // Bytes in headers
-            writer.Write(BasicHeaderSize + channels * ExtendedHeaderSize);
+            var extendedHeaderCount = channels * 2;
+            writer.Write(BasicHeaderSize + extendedHeaderCount * ExtendedHeaderSize);
             // Bytes in data packets
             writer.Write(0);
             // Time resolution of timestamps
@@ -121,8 +126,8 @@ namespace Bonsai.Ephys
                 }
             }
             writer.Write(commentField);
-            // Number of extended headers (one per channel)
-            writer.Write(channels);
+            // Number of extended headers
+            writer.Write(extendedHeaderCount);
         }
 
         void WriteNeuralEventWaveformHeader(BinaryWriter writer, int electrodeId, double threshold, int bytesPerWaveform, int spikeWidth)
@@ -151,6 +156,24 @@ namespace Bonsai.Ephys
             writer.Write((ushort)spikeWidth);
             // Reserved bytes
             writer.Write(0L);
+        }
+
+        void WriteNeuralEventLabelHeader(BinaryWriter writer, int electrodeId, string label)
+        {
+            // Packet ID
+            writer.Write(new[] { 'N', 'E', 'U', 'E', 'V', 'L', 'B', 'L' });
+            // Electrode ID
+            writer.Write((ushort)electrodeId);
+            // Label
+            var labelField = new char[16];
+            var labelLength = Math.Min(label.Length, labelField.Length - 1);
+            for (int i = 0; i < labelLength; i++)
+            {
+                labelField[i] = label[i];
+            }
+            writer.Write(labelField);
+            // Reserved bytes
+            writer.Write(LabelHeaderReservedBytes);
         }
 
         void WriteSpikeEventDataPacket(BinaryWriter writer, SpikeWaveform spike, byte[] data)
