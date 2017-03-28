@@ -14,6 +14,7 @@ namespace Bonsai.Ephys
     [Description("Produces a sequence of buffered samples acquired from any RHD2000 compatible USB interface board.")]
     public class Rhd2000EvalBoard : Source<Rhd2000DataFrame>
     {
+        const string CableDelayCategory = "Delay Settings";
         const int ChipIdRhd2132 = 1;
         const int ChipIdRhd2216 = 2;
         const int ChipIdRhd2164 = 4;
@@ -105,6 +106,22 @@ namespace Bonsai.Ephys
 
         [Description("Specifies whether the DSP offset removal filter is enabled.")]
         public bool DspEnabled { get; set; }
+
+        [Category(CableDelayCategory)]
+        [Description("The optional delay for sampling the MISO line in port A, in integer clock steps.")]
+        public int? CableDelayA { get; set; }
+
+        [Category(CableDelayCategory)]
+        [Description("The optional delay for sampling the MISO line in port B, in integer clock steps.")]
+        public int? CableDelayB { get; set; }
+
+        [Category(CableDelayCategory)]
+        [Description("The optional delay for sampling the MISO line in port C, in integer clock steps.")]
+        public int? CableDelayC { get; set; }
+
+        [Category(CableDelayCategory)]
+        [Description("The optional delay for sampling the MISO line in port D, in integer clock steps.")]
+        public int? CableDelayD { get; set; }
 
         IEnumerator<int> LedSequence()
         {
@@ -485,10 +502,10 @@ namespace Bonsai.Ephys
 
             // Set cable delay settings that yield good communication with each
             // RHD2000 chip.
-            var optimumDelayA = Math.Max(optimumDelays[0], optimumDelays[1]);
-            var optimumDelayB = Math.Max(optimumDelays[2], optimumDelays[3]);
-            var optimumDelayC = Math.Max(optimumDelays[4], optimumDelays[5]);
-            var optimumDelayD = Math.Max(optimumDelays[6], optimumDelays[7]);
+            var optimumDelayA = CableDelayA.GetValueOrDefault(Math.Max(optimumDelays[0], optimumDelays[1]));
+            var optimumDelayB = CableDelayB.GetValueOrDefault(Math.Max(optimumDelays[2], optimumDelays[3]));
+            var optimumDelayC = CableDelayC.GetValueOrDefault(Math.Max(optimumDelays[4], optimumDelays[5]));
+            var optimumDelayD = CableDelayD.GetValueOrDefault(Math.Max(optimumDelays[6], optimumDelays[7]));
             evalBoard.SetCableDelay(BoardPort.PortA, optimumDelayA);
             evalBoard.SetCableDelay(BoardPort.PortB, optimumDelayB);
             evalBoard.SetCableDelay(BoardPort.PortC, optimumDelayC);
