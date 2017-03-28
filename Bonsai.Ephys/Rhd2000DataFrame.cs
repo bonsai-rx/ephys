@@ -11,13 +11,18 @@ namespace Bonsai.Ephys
     {
         public Rhd2000DataFrame(Rhd2000DataBlock dataBlock, double bufferCapacity)
         {
-            Timestamp = dataBlock.Timestamp;
+            Timestamp = GetTimestampData(dataBlock.Timestamp);
             AmplifierData = GetStreamData(dataBlock.AmplifierData);
             AuxiliaryData = GetAuxiliaryData(dataBlock.AuxiliaryData);
             BoardAdcData = GetAdcData(dataBlock.BoardAdcData);
             TtlIn = GetTtlData(dataBlock.TtlIn);
             TtlOut = GetTtlData(dataBlock.TtlOut);
             BufferCapacity = bufferCapacity;
+        }
+
+        Mat GetTimestampData(uint[] data)
+        {
+            return Mat.FromArray(data, 1, data.Length, Depth.S32, 1);
         }
 
         Mat GetTtlData(int[] data)
@@ -79,7 +84,7 @@ namespace Bonsai.Ephys
             return Mat.FromArray(auxData, OutputChannels, numSamples, Depth.U16, 1);
         }
 
-        public uint[] Timestamp { get; private set; }
+        public Mat Timestamp { get; private set; }
 
         public Mat AmplifierData { get; private set; }
 
