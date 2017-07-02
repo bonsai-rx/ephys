@@ -12,9 +12,9 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
     <copyright>Gonçalo Lopes © 2017</copyright>
-    <tags>Bonsai Rhythm Ephys Electrophysiology</tags>
+    <tags>Bonsai Rhythm Open Ephys Electrophysiology</tags>
     <dependencies>
-      <dependency id="Bonsai.Ephys" version="2.3.0" />
+      <dependency id="Bonsai.Ephys" version="2.4.0" />
     </dependencies>
   </metadata>
 </package>

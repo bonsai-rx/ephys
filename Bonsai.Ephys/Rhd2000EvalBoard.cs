@@ -25,6 +25,7 @@ namespace Bonsai.Ephys
         double cableLengthPortB;
         double cableLengthPortC;
         double cableLengthPortD;
+        int samplesPerBlock;
 
         public Rhd2000EvalBoard()
         {
@@ -192,7 +193,7 @@ namespace Bonsai.Ephys
             evalBoard.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd3, 3);
 
             evalBoard.SetContinuousRunMode(false);
-            evalBoard.SetMaxTimeStep(Rhd2000DataBlock.GetSamplesPerDataBlock() * (uint)numBlocks);
+            evalBoard.SetMaxTimeStep((uint)samplesPerBlock * (uint)numBlocks);
 
             // Create matrices of doubles of size (numStreams x 32 x 3) to store complex amplitudes
             // of all amplifier channels (32 on each data stream) at three different Cseries values.
@@ -271,7 +272,7 @@ namespace Bonsai.Ephys
             var endIndex = startIndex + numPeriods * period - 1;
 
             // Move the measurement window to the end of the waveform to ignore start-up transient.
-            while (endIndex < Rhd2000DataBlock.GetSamplesPerDataBlock() * numBlocks - period)
+            while (endIndex < samplesPerBlock * numBlocks - period)
             {
                 startIndex += period;
                 endIndex += period;
@@ -317,7 +318,7 @@ namespace Bonsai.Ephys
             while (evalBoard.IsRunning()) Thread.Sleep(0);
 
             // Read the resulting single data block from the USB interface.
-            var dataBlock = new Rhd2000DataBlock(evalBoard.GetNumEnabledDataStreams());
+            var dataBlock = new Rhd2000DataBlock(evalBoard.GetNumEnabledDataStreams(), evalBoard.IsUsb3());
             evalBoard.ReadDataBlock(dataBlock);
             return dataBlock;
         }
@@ -368,7 +369,7 @@ namespace Bonsai.Ephys
             evalBoard.SetDataSource(6, BoardDataSource.PortD1);
             evalBoard.SetDataSource(7, BoardDataSource.PortD2);
 
-            var maxNumDataStreams = Rhythm.Net.Rhd2000EvalBoard.MaxNumDataStreams();
+            var maxNumDataStreams = Rhythm.Net.Rhd2000EvalBoard.MaxNumDataStreams(evalBoard.IsUsb3());
             for (int i = 0; i < maxNumDataStreams; i++)
             {
                 evalBoard.EnableDataStream(i, true);
@@ -381,20 +382,19 @@ namespace Bonsai.Ephys
             evalBoard.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd3, 0);
 
             // Since our longest command sequence is 60 commands, we run the SPI
-            // interface for 60 samples.
-            evalBoard.SetMaxTimeStep(60);
+            // interface for 60 samples (256 for usb3 power-of two needs).
+            evalBoard.SetMaxTimeStep((uint)samplesPerBlock);
             evalBoard.SetContinuousRunMode(false);
 
             // Run SPI command sequence at all 16 possible FPGA MISO delay settings
             // to find optimum delay for each SPI interface cable.
-            var chipId = new int[maxNumDataStreams];
-            var portIndex = new int[maxNumDataStreams];
-            var optimumDelays = new int[maxNumDataStreams];
-            var secondDelays = new int[maxNumDataStreams];
-            var goodDelayCounts = new int[maxNumDataStreams];
+            var maxNumChips = 8;
+            var chipId = new int[maxNumChips];
+            var optimumDelays = new int[maxNumChips];
+            var secondDelays = new int[maxNumChips];
+            var goodDelayCounts = new int[maxNumChips];
             for (int i = 0; i < optimumDelays.Length; i++)
             {
-                portIndex[i] = i / 2;
                 optimumDelays[i] = -1;
                 secondDelays[i] = -1;
                 goodDelayCounts[i] = 0;
@@ -412,19 +412,19 @@ namespace Bonsai.Ephys
 
                 // Read the Intan chip ID number from each RHD2000 chip found.
                 // Record delay settings that yield good communication with the chip.
-                for (int stream = 0; stream < optimumDelays.Length; stream++)
+                for (int chipIdx = 0; chipIdx < chipId.Length; chipIdx++)
                 {
                     int register59Value;
-                    var id = ReadDeviceId(dataBlock, stream, out register59Value);
+                    var id = ReadDeviceId(dataBlock, chipIdx, out register59Value);
                     if (id > 0)
                     {
-                        chipId[stream] = id;
-                        goodDelayCounts[stream]++;
-                        switch (goodDelayCounts[stream])
+                        chipId[chipIdx] = id;
+                        goodDelayCounts[chipIdx]++;
+                        switch (goodDelayCounts[chipIdx])
                         {
-                            case 1: optimumDelays[stream] = delay; break;
-                            case 2: secondDelays[stream] = delay; break;
-                            case 3: optimumDelays[stream] = secondDelays[stream]; break;
+                            case 1: optimumDelays[chipIdx] = delay; break;
+                            case 2: secondDelays[chipIdx] = delay; break;
+                            case 3: optimumDelays[chipIdx] = secondDelays[chipIdx]; break;
                         }
                     }
                 }
@@ -435,32 +435,19 @@ namespace Bonsai.Ephys
             // of data streams necessary to convey this data over the USB interface.
             var numStreamsRequired = 0;
             var rhd2216ChipPresent = false;
-            var numChannelsOnPort = new int[4];
-            for (int stream = 0; stream < chipId.Length; ++stream)
+            for (int chipIdx = 0; chipIdx < chipId.Length; ++chipIdx)
             {
-                switch (chipId[stream])
+                switch (chipId[chipIdx])
                 {
                     case ChipIdRhd2216:
                         numStreamsRequired++;
-                        if (numStreamsRequired <= maxNumDataStreams)
-                        {
-                            numChannelsOnPort[portIndex[stream]] += 16;
-                        }
                         rhd2216ChipPresent = true;
                         break;
                     case ChipIdRhd2132:
                         numStreamsRequired++;
-                        if (numStreamsRequired <= maxNumDataStreams)
-                        {
-                            numChannelsOnPort[portIndex[stream]] += 32;
-                        }
                         break;
                     case ChipIdRhd2164:
                         numStreamsRequired += 2;
-                        if (numStreamsRequired <= maxNumDataStreams)
-                        {
-                            numChannelsOnPort[portIndex[stream]] += 64;
-                        }
                         break;
                     default:
                         break;
@@ -470,34 +457,35 @@ namespace Bonsai.Ephys
             // If the user plugs in more chips than the USB interface can support, throw an exception
             if (numStreamsRequired > maxNumDataStreams)
             {
-                var capacityExceededMessage = "Capacity of USB Interface Exceeded. This RHD2000 USB interface board can support 256 only amplifier channels.";
+                var capacityExceededMessage = "Capacity of USB Interface Exceeded. This RHD2000 USB interface board can only support {0} amplifier channels.";
                 if (rhd2216ChipPresent) capacityExceededMessage += " (Each RHD2216 chip counts as 32 channels for USB interface purposes.)";
+                capacityExceededMessage = string.Format(capacityExceededMessage, maxNumDataStreams * 32);
                 throw new InvalidOperationException(capacityExceededMessage);
             }
 
             // Reconfigure USB data streams in consecutive order to accommodate all connected chips.
             int activeStream = 0;
-            for (int stream = 0; stream < maxNumDataStreams; ++stream)
+            for (int chipIdx = 0; chipIdx < chipId.Length; ++chipIdx)
             {
-                if (chipId[stream] > 0)
+                if (chipId[chipIdx] > 0)
                 {
                     evalBoard.EnableDataStream(activeStream, true);
-                    evalBoard.SetDataSource(activeStream, (BoardDataSource)stream);
-                    if (chipId[stream] == ChipIdRhd2164)
+                    evalBoard.SetDataSource(activeStream, (BoardDataSource)chipIdx);
+                    if (chipId[chipIdx] == ChipIdRhd2164)
                     {
                         evalBoard.EnableDataStream(activeStream + 1, true);
-                        evalBoard.SetDataSource(activeStream + 1, (BoardDataSource)(stream + maxNumDataStreams));
+                        evalBoard.SetDataSource(activeStream + 1, (BoardDataSource)(chipIdx + maxNumDataStreams));
                         activeStream += 2;
                     }
                     else activeStream++;
                 }
+                else optimumDelays[chipIdx] = 0;
             }
 
             // Now, disable data streams where we did not find chips present.
-            for (; activeStream < optimumDelays.Length; activeStream++)
+            for (; activeStream < maxNumDataStreams; activeStream++)
             {
                 evalBoard.EnableDataStream(activeStream, false);
-                optimumDelays[activeStream] = 0;
             }
 
             // Set cable delay settings that yield good communication with each
@@ -606,8 +594,8 @@ namespace Bonsai.Ephys
             evalBoard.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd3, 0);
 
             // Since our longest command sequence is 60 commands, we run the SPI
-            // interface for 60 samples.
-            evalBoard.SetMaxTimeStep(60);
+            // interface for 60 samples (256 for usb3 power-of two needs).
+            evalBoard.SetMaxTimeStep((uint)samplesPerBlock);
             evalBoard.SetContinuousRunMode(false);
 
             // Run ADC calibration command sequence
@@ -674,6 +662,7 @@ namespace Bonsai.Ephys
 
             // Open Opal Kelly XEM6010 board.
             evalBoard.Open();
+            samplesPerBlock = Rhd2000DataBlock.GetSamplesPerDataBlock(evalBoard.IsUsb3());
 
             try
             {

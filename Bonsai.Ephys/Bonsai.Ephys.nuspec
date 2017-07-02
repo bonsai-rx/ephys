@@ -12,6 +12,6 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
     <copyright>Gonçalo Lopes © 2017</copyright>
-    <tags>Bonsai Rhythm Ephys Electrophysiology</tags>
+    <tags>Bonsai Rhythm Open Ephys Electrophysiology</tags>
   </metadata>
 </package>
