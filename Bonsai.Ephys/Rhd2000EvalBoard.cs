@@ -27,6 +27,7 @@ namespace Bonsai.Ephys
         double cableLengthPortC;
         double cableLengthPortD;
         int samplesPerBlock;
+        int ttlOut;
 
         public Rhd2000EvalBoard()
         {
@@ -39,12 +40,15 @@ namespace Bonsai.Ephys
 
             source = Observable.Create<Rhd2000DataFrame>((observer, cancellationToken) =>
             {
+                var activeTtlOut = ttlOut = 0;
                 return Task.Factory.StartNew(() =>
                 {
                     Load();
                     var ledSequence = LedSequence();
                     try
                     {
+                        evalBoard.SetTtlMode(0);
+                        evalBoard.SetTtlOut(activeTtlOut);
                         evalBoard.SetContinuousRunMode(true);
                         evalBoard.Run();
 
@@ -55,6 +59,12 @@ namespace Bonsai.Ephys
                         ledSequence.MoveNext();
                         while (!cancellationToken.IsCancellationRequested)
                         {
+                            if (activeTtlOut != ttlOut)
+                            {
+                                activeTtlOut = ttlOut;
+                                evalBoard.SetTtlOut(activeTtlOut);
+                            }
+
                             if (evalBoard.ReadDataBlocks(blocksToRead, queue))
                             {
                                 var wordsInFifo = evalBoard.NumWordsInFifo();
@@ -71,6 +81,7 @@ namespace Bonsai.Ephys
                     finally
                     {
                         ledSequence.Dispose();
+                        evalBoard.ClearTtlOut();
                         evalBoard.SetContinuousRunMode(false);
                         evalBoard.SetMaxTimeStep(0);
                         evalBoard.Flush();
@@ -698,6 +709,19 @@ namespace Bonsai.Ephys
         public override IObservable<Rhd2000DataFrame> Generate()
         {
             return source;
+        }
+
+        public IObservable<Rhd2000DataFrame> Generate(IObservable<int> source)
+        {
+            return Observable.Create<Rhd2000DataFrame>(observer =>
+            {
+                return new CompositeDisposable(
+                    Generate().SubscribeSafe(observer),
+                    source.Subscribe(
+                        value => ttlOut = value,
+                        observer.OnError,
+                        () => { }));
+            });
         }
     }
 }
