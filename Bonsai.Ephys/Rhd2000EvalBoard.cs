@@ -15,6 +15,7 @@ namespace Bonsai.Ephys
     [Description("Produces a sequence of buffered samples acquired from any RHD2000 compatible USB interface board.")]
     public class Rhd2000EvalBoard : Source<Rhd2000DataFrame>
     {
+        const string BoardCategory = "Board Settings";
         const string CableDelayCategory = "Delay Settings";
         const int ChipIdRhd2132 = 1;
         const int ChipIdRhd2216 = 2;
@@ -98,26 +99,33 @@ namespace Bonsai.Ephys
             .RefCount();
         }
 
+        [Category(BoardCategory)]
         [FileNameFilter("BIT Files|*.bit")]
         [Editor("Bonsai.Design.OpenFileNameEditor, Bonsai.Design", typeof(UITypeEditor))]
         [Description("The name of the Rhythm bitfile used to configure the Xilinx FPGA.")]
         public string BitFileName { get; set; }
 
+        [Category(BoardCategory)]
         [Description("The per-channel sampling rate.")]
         public AmplifierSampleRate SampleRate { get; set; }
 
+        [Category(BoardCategory)]
         [Description("Specifies whether to fast settle amplifiers when reconfiguring the evaluation board.")]
         public bool FastSettle { get; set; }
 
+        [Category(BoardCategory)]
         [Description("The lower bandwidth of the amplifier on-board DSP filter (Hz).")]
         public double LowerBandwidth { get; set; }
 
+        [Category(BoardCategory)]
         [Description("The upper bandwidth of the amplifier on-board DSP filter (Hz).")]
         public double UpperBandwidth { get; set; }
 
+        [Category(BoardCategory)]
         [Description("The cutoff frequency of the DSP offset removal filter (Hz).")]
         public double DspCutoffFrequency { get; set; }
 
+        [Category(BoardCategory)]
         [Description("Specifies whether the DSP offset removal filter is enabled.")]
         public bool DspEnabled { get; set; }
 
