@@ -8,6 +8,7 @@ using System.Reactive.Disposables;
 using System.ComponentModel;
 using System.Drawing.Design;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Bonsai.Ephys
 {
@@ -36,50 +37,51 @@ namespace Bonsai.Ephys
             DspCutoffFrequency = 1.0;
             DspEnabled = true;
 
-            source = Observable.Create<Rhd2000DataFrame>(observer =>
+            source = Observable.Create<Rhd2000DataFrame>((observer, cancellationToken) =>
             {
-                Load();
-                var running = true;
-                evalBoard.SetContinuousRunMode(true);
-                evalBoard.Run();
-                var thread = new Thread(() =>
+                return Task.Factory.StartNew(() =>
                 {
-                    var blocksToRead = GetDataBlockReadCount(SampleRate);
-                    var fifoCapacity = Rhythm.Net.Rhd2000EvalBoard.FifoCapacityInWords();
+                    Load();
                     var ledSequence = LedSequence();
-
-                    var queue = new Queue<Rhd2000DataBlock>();
-                    ledSequence.MoveNext();
-                    while (running)
+                    try
                     {
-                        if (evalBoard.ReadDataBlocks(blocksToRead, queue))
+                        evalBoard.SetContinuousRunMode(true);
+                        evalBoard.Run();
+
+                        var blocksToRead = GetDataBlockReadCount(SampleRate);
+                        var fifoCapacity = Rhythm.Net.Rhd2000EvalBoard.FifoCapacityInWords();
+
+                        var queue = new Queue<Rhd2000DataBlock>();
+                        ledSequence.MoveNext();
+                        while (!cancellationToken.IsCancellationRequested)
                         {
-                            var wordsInFifo = evalBoard.NumWordsInFifo();
-                            var bufferPercentageCapacity = 100.0 * wordsInFifo / fifoCapacity;
-                            foreach (var dataBlock in queue)
+                            if (evalBoard.ReadDataBlocks(blocksToRead, queue))
                             {
-                                observer.OnNext(new Rhd2000DataFrame(dataBlock, bufferPercentageCapacity));
+                                var wordsInFifo = evalBoard.NumWordsInFifo();
+                                var bufferPercentageCapacity = 100.0 * wordsInFifo / fifoCapacity;
+                                foreach (var dataBlock in queue)
+                                {
+                                    observer.OnNext(new Rhd2000DataFrame(dataBlock, bufferPercentageCapacity));
+                                }
+                                queue.Clear();
+                                ledSequence.MoveNext();
                             }
-                            queue.Clear();
-                            ledSequence.MoveNext();
                         }
                     }
-
-                    ledSequence.Dispose();
-                });
-
-                thread.Start();
-                return () =>
-                {
-                    running = false;
-                    if (thread != Thread.CurrentThread) thread.Join();
-                    evalBoard.SetContinuousRunMode(false);
-                    evalBoard.SetMaxTimeStep(0);
-                    evalBoard.Flush();
-                    evalBoard.Close();
-                    evalBoard = null;
-                    chipRegisters = null;
-                };
+                    finally
+                    {
+                        ledSequence.Dispose();
+                        evalBoard.SetContinuousRunMode(false);
+                        evalBoard.SetMaxTimeStep(0);
+                        evalBoard.Flush();
+                        evalBoard.Close();
+                        evalBoard = null;
+                        chipRegisters = null;
+                    }
+                },
+                cancellationToken,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
             })
             .PublishReconnectable()
             .RefCount();
