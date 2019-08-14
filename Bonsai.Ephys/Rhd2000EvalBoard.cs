@@ -51,6 +51,7 @@ namespace Bonsai.Ephys
                         evalBoard.SetTtlMode(0);
                         evalBoard.SetTtlOut(activeTtlOut);
                         evalBoard.SetContinuousRunMode(true);
+                        evalBoard.EnableExternalFastSettle(ExternalFastSettleEnabled);
                         evalBoard.Run();
 
                         var blocksToRead = GetDataBlockReadCount(SampleRate);
@@ -109,6 +110,12 @@ namespace Bonsai.Ephys
         [Description("The per-channel sampling rate.")]
         public AmplifierSampleRate SampleRate { get; set; }
 
+        [Category(BoardCategory)]
+        [Description("Specifies whether the external fast settle channel (channel 0) is enabled.")]
+        public bool ExternalFastSettleEnabled { get; set; }
+
+        [Obsolete]
+        [Browsable(false)]
         [Category(BoardCategory)]
         [Description("Specifies whether to fast settle amplifiers when reconfiguring the evaluation board.")]
         public bool FastSettle { get; set; }
@@ -280,7 +287,7 @@ namespace Bonsai.Ephys
             evalBoard.SelectAuxCommandBank(BoardPort.PortC, AuxCmdSlot.AuxCmd1, 0);
             evalBoard.SelectAuxCommandBank(BoardPort.PortD, AuxCmdSlot.AuxCmd1, 0);
             evalBoard.SelectAuxCommandLength(AuxCmdSlot.AuxCmd1, 0, 1);
-            UpdateRegisterConfiguration();
+            UpdateRegisterConfiguration(fastSettle: false);
 
             // Turn off LED.
             ledSequence.Dispose();
@@ -594,12 +601,11 @@ namespace Bonsai.Ephys
             evalBoard.SelectAuxCommandLength(AuxCmdSlot.AuxCmd3, 0, sequenceLength - 1);
             chipRegisters.SetFastSettle(false);
 
-            UpdateRegisterConfiguration();
+            UpdateRegisterConfiguration(fastSettle: false);
         }
 
-        void UpdateRegisterConfiguration()
+        void UpdateRegisterConfiguration(bool fastSettle)
         {
-            var fastSettle = FastSettle;
             evalBoard.SelectAuxCommandBank(BoardPort.PortA, AuxCmdSlot.AuxCmd3, fastSettle ? 2 : 1);
             evalBoard.SelectAuxCommandBank(BoardPort.PortB, AuxCmdSlot.AuxCmd3, fastSettle ? 2 : 1);
             evalBoard.SelectAuxCommandBank(BoardPort.PortC, AuxCmdSlot.AuxCmd3, fastSettle ? 2 : 1);
@@ -624,7 +630,7 @@ namespace Bonsai.Ephys
 
             // Now that ADC calibration has been performed, we switch to the command sequence
             // that does not execute ADC calibration.
-            UpdateRegisterConfiguration();
+            UpdateRegisterConfiguration(fastSettle: false);
         }
 
         void SetDacDefaultConfiguration()
