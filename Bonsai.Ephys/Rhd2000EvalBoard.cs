@@ -500,7 +500,7 @@ namespace Bonsai.Ephys
                     if (chipId[chipIdx] == ChipIdRhd2164)
                     {
                         evalBoard.EnableDataStream(activeStream + 1, true);
-                        evalBoard.SetDataSource(activeStream + 1, (BoardDataSource)(chipIdx + maxNumDataStreams));
+                        evalBoard.SetDataSource(activeStream + 1, (BoardDataSource)(chipIdx + BoardDataSource.PortA1Ddr));
                         activeStream += 2;
                     }
                     else activeStream++;
