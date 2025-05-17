@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Title>Bonsai - Ephys Library</Title>
+    <Description>Bonsai Library containing interfaces for acquisition and processing of electrophysiology signals.</Description>
+    <TargetFramework>net472</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Bonsai.Dsp" Version="2.5.0" />
+    <PackageReference Include="Rhythm.Net" Version="1.5.0" />
+    <PackageReference Include="FTD2XX_NET" Version="1.0.14" />
+  </ItemGroup>
+
+</Project>
