@@ -3,13 +3,18 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30225.117
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bonsai.Ephys", "Bonsai.Ephys\Bonsai.Ephys.csproj", "{82923AED-354B-4CCE-8688-EEB35109BE9E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bonsai.Ephys", "src\Bonsai.Ephys\Bonsai.Ephys.csproj", "{82923AED-354B-4CCE-8688-EEB35109BE9E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bonsai.Ephys.Design", "Bonsai.Ephys.Design\Bonsai.Ephys.Design.csproj", "{CDBD8512-6876-4F46-941A-F04196F3CFDC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bonsai.Ephys.Design", "src\Bonsai.Ephys.Design\Bonsai.Ephys.Design.csproj", "{CDBD8512-6876-4F46-941A-F04196F3CFDC}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8ED5EF5B-4B66-448B-BE8F-9F6A306909FF}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{DEE5DD87-39C1-BF34-B639-A387DCCF972B}"
 	ProjectSection(SolutionItems) = preProject
-		Directory.Build.props = Directory.Build.props
+		build\Common.csproj.props = build\Common.csproj.props
+		build\Common.csproj.targets = build\Common.csproj.targets
+		build\Common.Tests.csproj.props = build\Common.Tests.csproj.props
+		build\icon.png = build\icon.png
+		build\Package.props = build\Package.props
+		build\Project.csproj.props = build\Project.csproj.props
 	EndProjectSection
 EndProject
 Global
