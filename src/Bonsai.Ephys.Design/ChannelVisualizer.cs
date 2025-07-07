@@ -88,7 +88,7 @@ namespace Bonsai.Ephys.Design
             imGuiCanvas.Dock = DockStyle.Fill;
             imGuiCanvas.Render += (sender, e) =>
             {
-                ImGui.DockSpaceOverViewport(
+                var dockspaceId = ImGui.DockSpaceOverViewport(
                     dockspaceId: 0,
                     ImGui.GetMainViewport(),
                     ImGuiDockNodeFlags.AutoHideTabBar | ImGuiDockNodeFlags.NoUndocking);
@@ -195,6 +195,12 @@ namespace Bonsai.Ephys.Design
 
                 end:
                 ImGui.End();
+                if (!ImGui.IsWindowDocked() &&
+                    ImGuiP.DockBuilderGetCentralNode(dockspaceId) is ImGuiDockNodePtr node &&
+                    !node.IsNull)
+                {
+                    ImGuiP.DockBuilderDockWindow(nameof(ChannelVisualizer), node.ID);
+                }
             };
 
             var visualizerService = (IDialogTypeVisualizerService)provider.GetService(typeof(IDialogTypeVisualizerService));
