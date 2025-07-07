@@ -54,7 +54,7 @@ namespace Bonsai.Ephys.Design
             }
         }
 
-        protected override void OnHandleCreated(EventArgs e)
+        protected unsafe override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
             if (HasValidContext)
@@ -75,6 +75,7 @@ namespace Bonsai.Ephys.Design
                 io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;     // Enable Keyboard Controls
                 io.ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad;      // Enable Gamepad Controls
                 io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;         // Enable Docking
+                io.IniFilename = null;
 
                 OnConfigure(EventArgs.Empty);
 
