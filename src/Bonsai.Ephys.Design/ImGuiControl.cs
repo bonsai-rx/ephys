@@ -67,6 +67,7 @@ namespace Bonsai.Ephys.Design
                 ImGui.SetCurrentContext(guiContext);
                 ImGuiImplOpenGL3.SetCurrentContext(guiContext);
                 ImGuiImplWin32.SetCurrentContext(guiContext);
+                ImPlot.SetImGuiContext(guiContext);
 
                 plotContext = ImPlot.CreateContext();
                 ImPlot.SetCurrentContext(plotContext);
@@ -93,6 +94,8 @@ namespace Bonsai.Ephys.Design
                 ImGui.SetCurrentContext(guiContext);
                 ImPlot.SetCurrentContext(plotContext);
                 ImPlot.SetImGuiContext(guiContext);
+                ImGuiImplWin32.SetCurrentContext(guiContext);
+                ImGuiImplOpenGL3.SetCurrentContext(guiContext);
 
                 ImGuiImplOpenGL3.NewFrame();
                 ImGuiImplWin32.NewFrame();
@@ -128,9 +131,14 @@ namespace Bonsai.Ephys.Design
         {
             if (HasValidContext && !disposed)
             {
+                MakeCurrent();
+                ImGui.SetCurrentContext(guiContext);
+                ImPlot.SetImGuiContext(guiContext);
                 ImGuiImplOpenGL3.Shutdown();
                 ImGuiImplWin32.Shutdown();
+                ImPlot.SetCurrentContext(null);
                 ImGui.SetCurrentContext(null);
+                ImPlot.DestroyContext(plotContext);
                 ImGui.DestroyContext(guiContext);
                 disposed = true;
             }
