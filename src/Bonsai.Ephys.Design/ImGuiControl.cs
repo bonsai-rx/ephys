@@ -62,6 +62,7 @@ namespace Bonsai.Ephys.Design
                 var parentForm = FindForm();
                 parentForm.ResizeBegin += (sender, e) => resizing = true;
                 parentForm.ResizeEnd += (sender, e) => resizing = false;
+                parentForm.FormClosing += (sender, e) => MakeCurrent();
 
                 guiContext = ImGui.CreateContext(null);
                 ImGui.SetCurrentContext(guiContext);
@@ -131,7 +132,6 @@ namespace Bonsai.Ephys.Design
         {
             if (HasValidContext && !disposed)
             {
-                MakeCurrent();
                 ImGui.SetCurrentContext(guiContext);
                 ImPlot.SetImGuiContext(guiContext);
                 ImGuiImplOpenGL3.Shutdown();
