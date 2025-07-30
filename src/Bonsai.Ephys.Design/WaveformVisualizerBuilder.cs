@@ -49,6 +49,12 @@ namespace Bonsai.Ephys.Design
         [Description("How much time to represent in the visualizer display, in seconds.")]
         public double? Timebase { get; set; }
 
+        /// <summary>
+        /// Gets or sets the number of adjacent channels to group under the same color.
+        /// </summary>
+        [Description("The number of adjacent channels to group under the same color.")]
+        public int? ColorGrouping { get; set; }
+
         /// <inheritdoc/>
         public override Expression Build(IEnumerable<Expression> arguments)
         {

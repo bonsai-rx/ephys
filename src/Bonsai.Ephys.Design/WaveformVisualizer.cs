@@ -33,6 +33,7 @@ namespace Bonsai.Ephys.Design
         int sampleRate = 30000;
         int maxSamplesPerChannel = 1920;
         double timebase = 1.0;
+        int colorGrouping = 1;
 
         /// <summary>
         /// Gets or sets a value specifying the color theme used to style the
@@ -56,6 +57,15 @@ namespace Bonsai.Ephys.Design
         {
             get => timebase;
             set => timebase = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the number of adjacent channels to group under the same color.
+        /// </summary>
+        public int ColorGrouping
+        {
+            get => colorGrouping;
+            set => colorGrouping = value;
         }
 
         /// <inheritdoc/>
@@ -106,7 +116,7 @@ namespace Bonsai.Ephys.Design
         void MenuWidgets()
         {
             var tableFlags = ImGuiTableFlags.NoSavedSettings;
-            if (ImGui.BeginTable("##menu", 4, tableFlags))
+            if (ImGui.BeginTable("##menu", 5, tableFlags))
             {
                 ImGui.TableNextRow();
                 ImGui.PushItemWidth(TextBoxWidth);
@@ -170,6 +180,16 @@ namespace Bonsai.Ephys.Design
                     ImGui.EndTable();
                 }
 
+                ImGui.TableNextColumn();
+                if (ImGui.BeginTable("##colorGroupingT", 1, tableFlags))
+                {
+                    ImGui.TableNextColumn();
+                    ImGui.Text("Colour Groups");
+                    if (ImGui.InputInt("##colorGrouping", ref colorGrouping))
+                        colorGrouping = Math.Max(1, colorGrouping);
+                    ImGui.EndTable();
+                }
+
                 ImGui.PopItemWidth();
                 ImGui.EndTable();
             }
@@ -212,7 +232,7 @@ namespace Bonsai.Ephys.Design
                 for (int i = 0; i < minShape.Height; i++)
                 {
                     var channelLabel = $"CH{i}";
-                    var channelColor = ImPlot.GetColormapColor(i);
+                    var channelColor = ImPlot.GetColormapColor(i / colorGrouping);
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     cursorPosY = ImGui.GetCursorPosY();
@@ -250,6 +270,8 @@ namespace Bonsai.Ephys.Design
                     channelHeight = visualizerBuilder.ChannelHeight.GetValueOrDefault();
                 if (visualizerBuilder.Timebase.HasValue)
                     timebase = visualizerBuilder.Timebase.GetValueOrDefault();
+                if (visualizerBuilder.ColorGrouping.HasValue)
+                    colorGrouping = visualizerBuilder.ColorGrouping.GetValueOrDefault();
             }
 
             imGuiCanvas = new ImGuiControl();
