@@ -1,5 +1,4 @@
-﻿using Bonsai;
-using Bonsai.Design;
+﻿using Bonsai.Design;
 using Bonsai.Expressions;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImPlot;
@@ -10,10 +9,12 @@ using System.Numerics;
 using System.Reactive;
 using System.Windows.Forms;
 
-[assembly: TypeVisualizer(typeof(Bonsai.Ephys.Design.WaveformVisualizer), Target = typeof(Mat))]
-
 namespace Bonsai.Ephys.Design
 {
+    /// <summary>
+    /// Provides a type visualizer for displaying a matrix as a multi-channel waveform,
+    /// with peak-preserving downsampling.
+    /// </summary>
     public class WaveformVisualizer : BufferedVisualizer
     {
         const int TextBoxWidth = 100;
@@ -27,36 +28,47 @@ namespace Bonsai.Ephys.Design
         Mat timeRange;
 
         int channelHeight = 25;
-        int sampleRate = 44100;
+        int sampleRate = 30000;
         int maxSamplesPerChannel = 1920;
-        double timeBase = 1.0;
+        double timebase = 1.0;
 
+        /// <summary>
+        /// Gets or sets a value specifying the color theme used to style the
+        /// visualizer contents.
+        /// </summary>
         public ColorTheme ColorTheme { get; set; } = ColorTheme.Light;
 
+        /// <summary>
+        /// Gets or sets the height of each channel plot, in pixels.
+        /// </summary>
         public int ChannelHeight
         {
             get => channelHeight;
             set => channelHeight = value;
         }
 
-        public double TimeBase
+        /// <summary>
+        /// Gets or sets how much time to represent in the visualizer display, in seconds.
+        /// </summary>
+        public double Timebase
         {
-            get => timeBase;
-            set => timeBase = value;
+            get => timebase;
+            set => timebase = value;
         }
 
+        /// <inheritdoc/>
         public override void Show(object value)
         {
             if (value is Mat data)
             {
-                var totalSamples = (int)(timeBase * sampleRate);
+                var totalSamples = (int)(timebase * sampleRate);
                 var samplesPerBin = Math.Max(1, totalSamples / maxSamplesPerChannel);
                 if (timeRange is null || decimatorMin.Buffer.Rows != data.Rows || decimatorMin.DownsampleFactor != samplesPerBin)
                 {
                     decimatorMin = new Decimator(data, maxSamplesPerChannel, samplesPerBin, ReduceOperation.Min);
                     decimatorMax = new Decimator(data, maxSamplesPerChannel, samplesPerBin, ReduceOperation.Max);
                     timeRange = new Mat(1, maxSamplesPerChannel, Depth.F32, 1);
-                    CV.Range(timeRange, 0, timeBase);
+                    CV.Range(timeRange, 0, timebase);
                 }
 
                 decimatorMin.Process(data);
@@ -64,6 +76,7 @@ namespace Bonsai.Ephys.Design
             }
         }
 
+        /// <inheritdoc/>
         protected override void ShowBuffer(IList<Timestamped<object>> values)
         {
             imGuiCanvas.Invalidate();
@@ -89,10 +102,10 @@ namespace Bonsai.Ephys.Design
         {
             ImGui.PushItemWidth(TextBoxWidth);
 
-            var editTimeBase = timeBase;
-            ImGui.InputDouble("Timebase (s)", ref editTimeBase, "%.3g");
+            var editTimebase = timebase;
+            ImGui.InputDouble("Timebase (s)", ref editTimebase, "%.3g");
             if (ImGui.IsItemDeactivatedAfterEdit())
-                timeBase = editTimeBase;
+                timebase = editTimebase;
 
             ImGui.SameLine();
             if (ImGui.InputInt("Channel Height", ref channelHeight))
@@ -176,6 +189,7 @@ namespace Bonsai.Ephys.Design
             ImPlot.PopStyleVar();
         }
 
+        /// <inheritdoc/>
         public override void Load(IServiceProvider provider)
         {
             var context = (ITypeVisualizerContext)provider.GetService(typeof(ITypeVisualizerContext));
@@ -185,8 +199,8 @@ namespace Bonsai.Ephys.Design
                 maxSamplesPerChannel = visualizerBuilder.MaxSamplesPerChannel;
                 if (visualizerBuilder.ChannelHeight.HasValue)
                     channelHeight = visualizerBuilder.ChannelHeight.GetValueOrDefault();
-                if (visualizerBuilder.TimeBase.HasValue)
-                    timeBase = visualizerBuilder.TimeBase.GetValueOrDefault();
+                if (visualizerBuilder.Timebase.HasValue)
+                    timebase = visualizerBuilder.Timebase.GetValueOrDefault();
             }
 
             imGuiCanvas = new ImGuiControl();
@@ -224,6 +238,7 @@ namespace Bonsai.Ephys.Design
             visualizerService?.AddControl(imGuiCanvas);
         }
 
+        /// <inheritdoc/>
         public override void Unload()
         {
             imGuiCanvas?.Dispose();
@@ -231,9 +246,19 @@ namespace Bonsai.Ephys.Design
         }
     }
 
+    /// <summary>
+    /// Specifies the color theme used to style visualizer contents.
+    /// </summary>
     public enum ColorTheme
     {
+        /// <summary>
+        /// Specifies a color scheme using dark-colored text on a light background.
+        /// </summary>
         Light,
+
+        /// <summary>
+        /// Specifies a color scheme using light-colored text on a dark background.
+        /// </summary>
         Dark
     }
 }
