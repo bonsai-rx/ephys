@@ -10,12 +10,11 @@ using System.Numerics;
 using System.Reactive;
 using System.Windows.Forms;
 
-//TODO: Specify the target of the type visualizer
-[assembly: TypeVisualizer(typeof(Bonsai.Ephys.Design.ChannelVisualizer), Target = typeof(Mat))]
+[assembly: TypeVisualizer(typeof(Bonsai.Ephys.Design.WaveformVisualizer), Target = typeof(Mat))]
 
 namespace Bonsai.Ephys.Design
 {
-    public class ChannelVisualizer : BufferedVisualizer
+    public class WaveformVisualizer : BufferedVisualizer
     {
         const int TextBoxWidth = 100;
         const int MinChannelHeight = 10;
@@ -74,7 +73,7 @@ namespace Bonsai.Ephys.Design
         public unsafe override void Load(IServiceProvider provider)
         {
             var context = (ITypeVisualizerContext)provider.GetService(typeof(ITypeVisualizerContext));
-            if (ExpressionBuilder.GetVisualizerElement(context.Source).Builder is ChannelVisualizerBuilder visualizerBuilder)
+            if (ExpressionBuilder.GetVisualizerElement(context.Source).Builder is WaveformVisualizerBuilder visualizerBuilder)
             {
                 sampleRate = visualizerBuilder.SampleRate;
                 maxSamplesPerChannel = visualizerBuilder.MaxSamplesPerChannel;
@@ -105,12 +104,14 @@ namespace Bonsai.Ephys.Design
                         break;
                 }
 
-                ImGui.Begin(nameof(ChannelVisualizer));
+                ImGui.Begin(nameof(WaveformVisualizer));
                 ImGui.PushItemWidth(TextBoxWidth);
+
                 var editTimeBase = timeBase;
                 ImGui.InputDouble("Timebase (s)", ref editTimeBase, "%.3g");
                 if (ImGui.IsItemDeactivatedAfterEdit())
                     timeBase = editTimeBase;
+
                 ImGui.SameLine();
                 if (ImGui.InputInt("Channel Height", ref channelHeight))
                     channelHeight = Math.Max(MinChannelHeight, channelHeight);
@@ -199,7 +200,7 @@ namespace Bonsai.Ephys.Design
                     ImGuiP.DockBuilderGetCentralNode(dockspaceId) is ImGuiDockNodePtr node &&
                     !node.IsNull)
                 {
-                    ImGuiP.DockBuilderDockWindow(nameof(ChannelVisualizer), node.ID);
+                    ImGuiP.DockBuilderDockWindow(nameof(WaveformVisualizer), node.ID);
                 }
             };
 

@@ -7,10 +7,10 @@ using System.Linq.Expressions;
 
 namespace Bonsai.Ephys.Design
 {
-    [TypeVisualizer(typeof(ChannelVisualizer))]
+    [TypeVisualizer(typeof(WaveformVisualizer))]
     [WorkflowElementCategory(ElementCategory.Sink)]
     [WorkflowElementIcon("Bonsai:ElementIcon.Neuro")]
-    public class ChannelVisualizerBuilder : SingleArgumentExpressionBuilder
+    public class WaveformVisualizerBuilder : SingleArgumentExpressionBuilder
     {
         public int SampleRate { get; set; } = 44100;
 
@@ -27,7 +27,7 @@ namespace Bonsai.Ephys.Design
             if (parameterType != typeof(Mat))
                 throw new InvalidOperationException($"The input type must be {typeof(Mat)}.");
 
-            return Expression.Call(typeof(ChannelVisualizerBuilder), nameof(Process), null, source);
+            return Expression.Call(typeof(WaveformVisualizerBuilder), nameof(Process), null, source);
         }
 
         static IObservable<Mat> Process(IObservable<Mat> source)
