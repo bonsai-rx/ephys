@@ -166,6 +166,7 @@ namespace Bonsai.Ephys.Design
                 for (int i = 0; i < minShape.Height; i++)
                 {
                     var channelLabel = $"CH{i}";
+                    var channelColor = ImPlot.GetColormapColor(i);
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     cursorPosY = ImGui.GetCursorPosY();
@@ -174,12 +175,14 @@ namespace Bonsai.Ephys.Design
                     ImGui.TableNextColumn();
                     if (ImPlot.BeginPlot(channelLabel, new(-1, channelHeight), dataPlotFlags))
                     {
+                        ImPlot.PushStyleColor(ImPlotCol.Line, channelColor);
                         ImPlot.SetupAxes(string.Empty, channelLabel, bareAxesFlags, bareAxesFlags);
                         var minLinePtr = (float*)((byte*)minPtr + i * minStep);
                         var maxLinePtr = (float*)((byte*)maxPtr + i * maxStep);
                         ImPlot.PlotShaded(string.Empty, (float*)timeRangePtr, minLinePtr, maxLinePtr, minShape.Width);
                         ImPlot.PlotLine(string.Empty, (float*)timeRangePtr, minLinePtr, minShape.Width);
                         ImPlot.PlotLine(string.Empty, (float*)timeRangePtr, maxLinePtr, maxShape.Width);
+                        ImPlot.PopStyleColor();
                         ImPlot.EndPlot();
                     }
                 }
