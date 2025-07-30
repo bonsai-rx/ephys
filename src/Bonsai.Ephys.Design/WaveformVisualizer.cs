@@ -65,6 +65,9 @@ namespace Bonsai.Ephys.Design
                 var samplesPerBin = Math.Max(1, totalSamples / maxSamplesPerChannel);
                 if (timeRange is null || decimatorMin.Buffer.Rows != data.Rows || decimatorMin.DownsampleFactor != samplesPerBin)
                 {
+                    timeRange?.Dispose();
+                    decimatorMin?.Dispose();
+                    decimatorMax?.Dispose();
                     decimatorMin = new Decimator(data, maxSamplesPerChannel, samplesPerBin, ReduceOperation.Min);
                     decimatorMax = new Decimator(data, maxSamplesPerChannel, samplesPerBin, ReduceOperation.Max);
                     timeRange = new Mat(1, maxSamplesPerChannel, Depth.F32, 1);
@@ -244,8 +247,12 @@ namespace Bonsai.Ephys.Design
         /// <inheritdoc/>
         public override void Unload()
         {
+            timeRange?.Dispose();
+            decimatorMin?.Dispose();
+            decimatorMax?.Dispose();
             imGuiCanvas?.Dispose();
             imGuiCanvas = null;
+            timeRange = null;
         }
     }
 

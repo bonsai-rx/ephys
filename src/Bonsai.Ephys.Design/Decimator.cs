@@ -3,7 +3,7 @@ using System;
 
 namespace Bonsai.Ephys.Design
 {
-    internal class Decimator
+    internal sealed class Decimator : IDisposable
     {
         int carry;
         int outputIndex;
@@ -26,7 +26,7 @@ namespace Bonsai.Ephys.Design
             carry = downsampleFactor;
             carryBuffer = new Mat(input.Rows, 1, input.Depth, input.Channels);
             buffer = new Mat(input.Rows, length, input.Depth, input.Channels);
-            buffer.SetZero();
+            buffer.Set(Scalar.All(double.NaN));
             reduceOp = reduceOperation;
         }
 
@@ -73,6 +73,12 @@ namespace Bonsai.Ephys.Design
             }
 
             inputIndex -= input.Cols;
+        }
+
+        public void Dispose()
+        {
+            buffer.Dispose();
+            carryBuffer.Dispose();
         }
     }
 }
