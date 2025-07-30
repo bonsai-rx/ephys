@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace Bonsai.Ephys.Design
 {
-    public partial class IntanEvalBoardEditorForm : Form
+    internal partial class IntanEvalBoardEditorForm : Form
     {
         public IntanEvalBoardEditorForm()
         {

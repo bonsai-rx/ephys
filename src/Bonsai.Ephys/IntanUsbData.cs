@@ -33,33 +33,48 @@ using System.Diagnostics;
 namespace Bonsai.Ephys
 {
     /// <summary>
-    /// This class stores data frames containing amplifier data from all 16 channels,
+    /// Represents data frames containing amplifier data from all 16 channels,
     /// plus binary data from the Port J3 auxiliary TTL inputs. 
     /// </summary>
-    public class IntanUsbData
+    internal class IntanUsbData
     {
-        // private variables
-        private float[,] dataFrame = new float[16, 750];
-        private UInt16[] auxFrame = new UInt16[750];
-
-        // public methods
-
-        public float[,] DataFrame
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IntanUsbData"/> class
+        /// containing buffered amplifier and auxiliary input voltage.
+        /// </summary>
+        /// <param name="dataIn">The buffered electrode amplifier voltage data.</param>
+        /// <param name="auxIn">The buffered auxiliary TTL input data.</param>
+        public IntanUsbData(float[,] dataIn, UInt16[] auxIn)
         {
-            get { return dataFrame; }
+            for (int channel = 0; channel < 16; channel++)
+            {
+                for (int i = 0; i < 750; i++)
+                {
+                    DataFrame[channel, i] = dataIn[channel, i];
+                }
+            }
+            for (int i = 0; i < 750; i++)
+            {
+                AuxFrame[i] = auxIn[i];
+            }
         }
 
-        public UInt16[] AuxFrame
-        {
-            get { return auxFrame; }
-        }
+        /// <summary>
+        /// Gets the buffered electrode amplifier voltage data.
+        /// </summary>
+        public float[,] DataFrame { get; } = new float[16, 750];
+
+        /// <summary>
+        /// Gets the buffered auxiliary TTL input data.
+        /// </summary>
+        public UInt16[] AuxFrame { get; } = new UInt16[750];
 
         /// <summary>
         /// Write first element to debugging window.
         /// </summary>
         public void DisplayFirstElement()
         {
-            Debug.WriteLine("First element = " + Convert.ToString(dataFrame[0, 0]));
+            Debug.WriteLine("First element = " + Convert.ToString(DataFrame[0, 0]));
         }
 
         /// <summary>
@@ -74,32 +89,12 @@ namespace Bonsai.Ephys
             {
                 for (int i = 0; i < 750; i++)
                 {
-                    dataArray[channel, i] = dataFrame[channel, i];
+                    dataArray[channel, i] = DataFrame[channel, i];
                 }
             }
             for (int i = 0; i < 750; i++)
             {
-                auxArray[i] = auxFrame[i];
-            }
-        }
-
-        /// <summary>
-        /// USBData constructor.
-        /// </summary>
-        /// <param name="dataIn">Amplifier data.</param>
-        /// <param name="auxIn">Auxiliary TTL data.</param>
-        public IntanUsbData(float[,] dataIn, UInt16[] auxIn)
-        {
-            for (int channel = 0; channel < 16; channel++)
-            {
-                for (int i = 0; i < 750; i++)
-                {
-                    dataFrame[channel, i] = dataIn[channel, i];
-                }
-            }
-            for (int i = 0; i < 750; i++)
-            {
-                auxFrame[i] = auxIn[i];
+                auxArray[i] = AuxFrame[i];
             }
         }
     }

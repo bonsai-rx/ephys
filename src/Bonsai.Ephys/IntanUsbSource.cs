@@ -34,27 +34,26 @@ using FTD2XX_NET;
 namespace Bonsai.Ephys
 {
     /// <summary>
-    /// This class provides access to and control of an RHA2000-EVAL board connected
-    /// to a USB port.
+    /// Provides access to and control of an RHA2000-EVAL board connected to a USB port.
     /// </summary>
-    public class IntanUsbSource
+    internal class IntanUsbSource
     {
         // private variables
 
         private FTDI ftdiDeviceA;
-        private float[,] dataRaw = new float[16, 750];
-        private UInt16[] auxFrame = new UInt16[750];
-        private float[,] dataFrame = new float[16, 750];
-        private float[,] dataNotch = new float[16, 750];
-        private float[] dataState = new float[16];
+        readonly float[,] dataRaw = new float[16, 750];
+        readonly UInt16[] auxFrame = new UInt16[750];
+        readonly float[,] dataFrame = new float[16, 750];
+        readonly float[,] dataNotch = new float[16, 750];
+        readonly float[] dataState = new float[16];
 
-        private float[] dataDelay1 = new float[16];
-        private float[] dataDelay2 = new float[16];
-        private float[] notchDelay1 = new float[16];
-        private float[] notchDelay2 = new float[16];
+        readonly float[] dataDelay1 = new float[16];
+        readonly float[] dataDelay2 = new float[16];
+        readonly float[] notchDelay1 = new float[16];
+        readonly float[] notchDelay2 = new float[16];
 
-        private byte[] readDataBufferA = new byte[36000];  // USB data read buffer
-        private byte[] resyncDataBufferA = new byte[36000];  // probably only need 48 bytes maximum, but let's be safe
+        readonly byte[] readDataBufferA = new byte[36000];  // USB data read buffer
+        readonly byte[] resyncDataBufferA = new byte[36000];  // probably only need 48 bytes maximum, but let's be safe
         private bool dataJustStarted = true;
         private int resyncCount = 1;
         private bool running = false;
@@ -302,8 +301,6 @@ namespace Bonsai.Ephys
         /// <summary>
         /// Check to see if there is at least 30 msec worth of data in the USB read buffer.
         /// </summary>
-        /// <param name="plotQueue">Queue used for plotting data to screen.</param>
-        /// <param name="saveQueue">Queue used for saving data to disk.</param>
         public IntanUsbData ReadUsbData()
         {
             // Note: Users must call CheckForUsbData periodically during time-consuming operations (like updating graphics)
@@ -778,12 +775,12 @@ namespace Bonsai.Ephys
         }
     }
 
-    public class IntanUsbException : System.Exception
+    /// <summary>
+    /// Represents errors that occur during acquisition and control of an Intan RHA2000-EVAL board.
+    /// </summary>
+    /// <inheritdoc/>
+    public class IntanUsbException(string message) : Exception(message)
     {
-        public IntanUsbException(string message) :
-            base(message) // pass the message up to the base class
-        {
-        }
     }
 
 }

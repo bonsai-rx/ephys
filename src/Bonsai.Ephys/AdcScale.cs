@@ -6,12 +6,31 @@ using System.Reactive.Linq;
 
 namespace Bonsai.Ephys
 {
-    [Description("Rescales ADC values sampled from Rhd2000 data blocks into SI voltage units.")]
+    /// <summary>
+    /// Represents an operator that rescales ADC values sampled from RHD2000 data blocks
+    /// into SI voltage units.
+    /// </summary>
+    [Description("Rescales ADC values sampled from RHD2000 data blocks into SI voltage units.")]
     public class AdcScale : Transform<Mat, Mat>
     {
+        /// <summary>
+        /// Gets or sets the type of the ADC from which the input samples were taken.
+        /// </summary>
         [Description("The type of the ADC from which the input samples were taken.")]
         public AdcType AdcType { get; set; }
 
+        /// <summary>
+        /// Rescales every RHD2000 ADC value in an observable sequence into SI voltage units.
+        /// </summary>
+        /// <param name="source">A sequence of multi-channel ADC values.</param>
+        /// <returns>
+        /// A sequence of multi-channel array values, where each element of the array
+        /// has been rescaled to SI voltage units.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        /// The observable sequence will emit an exception if an invalid or unsupported
+        /// ADC type is specified.
+        /// </exception>
         public override IObservable<Mat> Process(IObservable<Mat> source)
         {
             return source.Select(input =>
@@ -35,7 +54,7 @@ namespace Bonsai.Ephys
                         CV.ConvertScale(input, output, 0.000050354, 0);
                         break;
                     default:
-                        throw new InvalidOperationException("Invalid adc type.");
+                        throw new InvalidOperationException("Invalid ADC type.");
                 }
 
                 return output;

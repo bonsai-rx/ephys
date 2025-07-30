@@ -5,10 +5,15 @@ using System.Windows.Forms;
 
 namespace Bonsai.Ephys.Design
 {
+    /// <summary>
+    /// Provides a user interface for testing the impedance of individual channels in
+    /// a RHA2000-EVAL board.
+    /// </summary>
     public class IntanEvalBoardEditor : WorkflowComponentEditor
     {
         IntanEvalBoardEditorForm editorForm;
 
+        /// <inheritdoc/>
         public override bool EditComponent(ITypeDescriptorContext context, object component, IServiceProvider provider, IWin32Window owner)
         {
             if (provider != null)
