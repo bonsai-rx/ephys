@@ -10,7 +10,11 @@ using System.Threading.Tasks;
 
 namespace Bonsai.Ephys
 {
-    [Description("Produces a sequence of buffered samples acquired from any RHD2000 compatible USB interface board.")]
+    /// <summary>
+    /// Represents an operator that generates a sequence of buffered samples acquired from
+    /// an RHD2000 compatible USB interface board.
+    /// </summary>
+    [Description("Generates a sequence of buffered samples acquired from an RHD2000 compatible USB interface board.")]
     public class Rhd2000EvalBoard : Source<Rhd2000DataFrame>
     {
         const string BoardCategory = "Board Settings";
@@ -18,7 +22,7 @@ namespace Bonsai.Ephys
         const int ChipIdRhd2132 = 1;
         const int ChipIdRhd2216 = 2;
         const int ChipIdRhd2164 = 4;
-        IObservable<Rhd2000DataFrame> source;
+        readonly IObservable<Rhd2000DataFrame> source;
         Rhd2000Registers chipRegisters;
         Rhythm.Net.Rhd2000EvalBoard evalBoard;
         double cableLengthPortA;
@@ -28,6 +32,9 @@ namespace Bonsai.Ephys
         int samplesPerBlock;
         int ttlOut;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Rhd2000EvalBoard"/> class.
+        /// </summary>
         public Rhd2000EvalBoard()
         {
             BitFileName = "main.bit";
@@ -98,54 +105,97 @@ namespace Bonsai.Ephys
             .RefCount();
         }
 
+        /// <summary>
+        /// Gets or sets the name of the Rhythm bitfile used to configure the Xilinx FPGA.
+        /// </summary>
         [Category(BoardCategory)]
         [FileNameFilter("BIT Files|*.bit")]
         [Editor("Bonsai.Design.OpenFileNameEditor, Bonsai.Design", typeof(UITypeEditor))]
         [Description("The name of the Rhythm bitfile used to configure the Xilinx FPGA.")]
         public string BitFileName { get; set; }
 
+        /// <summary>
+        /// Gets or sets the per-channel sampling rate.
+        /// </summary>
         [Category(BoardCategory)]
         [Description("The per-channel sampling rate.")]
         public AmplifierSampleRate SampleRate { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value specifying whether the external fast settle channel
+        /// (channel 0) is enabled.
+        /// </summary>
         [Category(BoardCategory)]
         [Description("Specifies whether the external fast settle channel (channel 0) is enabled.")]
         public bool ExternalFastSettleEnabled { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value specifying whether to fast settle amplifiers when
+        /// reconfiguring the evaluation board.
+        /// </summary>
         [Obsolete]
         [Browsable(false)]
         [Category(BoardCategory)]
         [Description("Specifies whether to fast settle amplifiers when reconfiguring the evaluation board.")]
         public bool FastSettle { get; set; }
 
+        /// <summary>
+        /// Gets or sets the lower bandwidth of the amplifier on-board DSP filter, in Hz.
+        /// </summary>
         [Category(BoardCategory)]
-        [Description("The lower bandwidth of the amplifier on-board DSP filter (Hz).")]
+        [Description("The lower bandwidth of the amplifier on-board DSP filter, in Hz.")]
         public double LowerBandwidth { get; set; }
 
+        /// <summary>
+        /// Gets or sets the upper bandwidth of the amplifier on-board DSP filter, in Hz.
+        /// </summary>
         [Category(BoardCategory)]
-        [Description("The upper bandwidth of the amplifier on-board DSP filter (Hz).")]
+        [Description("The upper bandwidth of the amplifier on-board DSP filter, in Hz.")]
         public double UpperBandwidth { get; set; }
 
+        /// <summary>
+        /// Gets or sets the cutoff frequency of the DSP offset removal filter, in Hz.
+        /// </summary>
         [Category(BoardCategory)]
-        [Description("The cutoff frequency of the DSP offset removal filter (Hz).")]
+        [Description("The cutoff frequency of the DSP offset removal filter, in Hz.")]
         public double DspCutoffFrequency { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value specifying whether the DSP offset removal filter
+        /// is enabled.
+        /// </summary>
         [Category(BoardCategory)]
         [Description("Specifies whether the DSP offset removal filter is enabled.")]
         public bool DspEnabled { get; set; }
 
+        /// <summary>
+        /// Gets or sets the optional delay for sampling the MISO line in port A,
+        /// in integer clock steps.
+        /// </summary>
         [Category(CableDelayCategory)]
         [Description("The optional delay for sampling the MISO line in port A, in integer clock steps.")]
         public int? CableDelayA { get; set; }
 
+        /// <summary>
+        /// Gets or sets the optional delay for sampling the MISO line in port B,
+        /// in integer clock steps.
+        /// </summary>
         [Category(CableDelayCategory)]
         [Description("The optional delay for sampling the MISO line in port B, in integer clock steps.")]
         public int? CableDelayB { get; set; }
 
+        /// <summary>
+        /// Gets or sets the optional delay for sampling the MISO line in port C,
+        /// in integer clock steps.
+        /// </summary>
         [Category(CableDelayCategory)]
         [Description("The optional delay for sampling the MISO line in port C, in integer clock steps.")]
         public int? CableDelayC { get; set; }
 
+        /// <summary>
+        /// Gets or sets the optional delay for sampling the MISO line in port D,
+        /// in integer clock steps.
+        /// </summary>
         [Category(CableDelayCategory)]
         [Description("The optional delay for sampling the MISO line in port D, in integer clock steps.")]
         public int? CableDelayD { get; set; }
@@ -239,22 +289,22 @@ namespace Bonsai.Ephys
             Queue<Rhd2000DataBlock> dataQueue = new Queue<Rhd2000DataBlock>();
             for (int capRange = 0; capRange < 3; capRange++)
             {
-                double cSeries;
-                switch (capRange)
-                {
-                    case 0:
-                        chipRegisters.SetZcheckScale(ZcheckCs.ZcheckCs100fF);
-                        cSeries = 0.1e-12;
-                        break;
-                    case 1:
-                        chipRegisters.SetZcheckScale(ZcheckCs.ZcheckCs1pF);
-                        cSeries = 1.0e-12;
-                        break;
-                    default:
-                        chipRegisters.SetZcheckScale(ZcheckCs.ZcheckCs10pF);
-                        cSeries = 10.0e-12;
-                        break;
-                }
+                //double cSeries;
+                //switch (capRange)
+                //{
+                //    case 0:
+                //        chipRegisters.SetZcheckScale(ZcheckCs.ZcheckCs100fF);
+                //        cSeries = 0.1e-12;
+                //        break;
+                //    case 1:
+                //        chipRegisters.SetZcheckScale(ZcheckCs.ZcheckCs1pF);
+                //        cSeries = 1.0e-12;
+                //        break;
+                //    default:
+                //        chipRegisters.SetZcheckScale(ZcheckCs.ZcheckCs10pF);
+                //        cSeries = 10.0e-12;
+                //        break;
+                //}
 
                 // Check all 32 channels across all active data streams.
                 for (int channel = 0; channel < numChannels; channel++)
@@ -718,11 +768,32 @@ namespace Bonsai.Ephys
             }
         }
 
+        /// <summary>
+        /// Generates an observable sequence of buffered samples acquired from
+        /// an RHD2000 compatible USB interface board.
+        /// </summary>
+        /// <returns>
+        /// A sequence of <see cref="Rhd2000DataFrame"/> objects containing buffered data
+        /// samples from a Rhythm FPGA interface controlling up to eight RHD2000 chips.
+        /// </returns>
         public override IObservable<Rhd2000DataFrame> Generate()
         {
             return source;
         }
 
+        /// <summary>
+        /// Generates an observable sequence of buffered samples acquired from
+        /// an RHD2000 compatible USB interface board, while simultaneously allowing
+        /// the ability to set the state of board digital TTL output pins.
+        /// </summary>
+        /// <param name="source">
+        /// A sequence of 16-bit number mask values representing the state of the
+        /// board digital TTL output pins to set.
+        /// </param>
+        /// <returns>
+        /// A sequence of <see cref="Rhd2000DataFrame"/> objects containing buffered data
+        /// samples from a Rhythm FPGA interface controlling up to eight RHD2000 chips.
+        /// </returns>
         public IObservable<Rhd2000DataFrame> Generate(IObservable<int> source)
         {
             return Observable.Create<Rhd2000DataFrame>(observer =>

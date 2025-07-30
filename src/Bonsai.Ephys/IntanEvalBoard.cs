@@ -7,14 +7,21 @@ using System.ComponentModel;
 
 namespace Bonsai.Ephys
 {
-    [Description("Produces a sequence of buffered samples acquired from a RHA2000-EVAL board.")]
+    /// <summary>
+    /// Represents an operator that generates a sequence of buffered samples acquired
+    /// from an RHA2000-EVAL board.
+    /// </summary>
+    [Description("Generates a sequence of buffered samples acquired from an RHA2000-EVAL board.")]
     [Editor("Bonsai.Ephys.Design.IntanEvalBoardEditor, Bonsai.Ephys.Design", typeof(ComponentEditor))]
     public class IntanEvalBoard : Source<EvalBoardData>
     {
         bool settle;
-        IntanUsbSource usbSource = new IntanUsbSource();
-        IObservable<EvalBoardData> source;
+        readonly IntanUsbSource usbSource = new();
+        readonly IObservable<EvalBoardData> source;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IntanEvalBoard"/> class.
+        /// </summary>
         public IntanEvalBoard()
         {
             source = Observable.Create<EvalBoardData>(observer =>
@@ -54,13 +61,14 @@ namespace Bonsai.Ephys
             .RefCount();
         }
 
-        [XmlIgnore]
-        [Browsable(false)]
-        public IntanUsbSource UsbSource
+        internal IntanUsbSource UsbSource
         {
             get { return usbSource; }
         }
 
+        /// <summary>
+        /// Gets or sets a value used online to reset the state of the amplifiers.
+        /// </summary>
         [XmlIgnore]
         [Description("Used online to reset the state of the amplifiers.")]
         public bool AmplifierSettle
@@ -74,6 +82,9 @@ namespace Bonsai.Ephys
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the software high-pass filter is enabled.
+        /// </summary>
         [Description("Indicates whether the software high-pass filter is enabled.")]
         public bool HighPassFilter
         {
@@ -81,6 +92,9 @@ namespace Bonsai.Ephys
             set { usbSource.EnableHPF = value; }
         }
 
+        /// <summary>
+        /// Gets or sets the cutoff frequency of the software high-pass filter.
+        /// </summary>
         [Description("The cutoff frequency of the software high-pass filter.")]
         public double HighPassFilterCutoff
         {
@@ -88,6 +102,9 @@ namespace Bonsai.Ephys
             set { usbSource.FHPF = value; }
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the software notch filter is enabled.
+        /// </summary>
         [Description("Indicates whether the software notch filter is enabled.")]
         public bool NotchFilter
         {
@@ -95,6 +112,9 @@ namespace Bonsai.Ephys
             set { usbSource.EnableNotch = value; }
         }
 
+        /// <summary>
+        /// Gets or sets the frequency of the software notch filter.
+        /// </summary>
         [Description("The frequency of the software notch filter.")]
         public double NotchFrequency
         {
@@ -102,6 +122,14 @@ namespace Bonsai.Ephys
             set { usbSource.FNotch = value; }
         }
 
+        /// <summary>
+        /// Generates an observable sequence of buffered samples acquired from an
+        /// RHA2000-EVAL board.
+        /// </summary>
+        /// <returns>
+        /// A sequence of <see cref="EvalBoardData"/> objects containing buffered amplifier
+        /// voltage and auxiliary TTL input data sampled from an RHA2000-EVAL board.
+        /// </returns>
         public override IObservable<EvalBoardData> Generate()
         {
             return source;
