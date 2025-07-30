@@ -24,6 +24,7 @@ namespace Bonsai.Ephys.Design
         public ImGuiControl()
         {
             GraphicsContext.ShareContexts = false;
+            Size = new Size(640, 480);
         }
 
         public event EventHandler Configure
@@ -68,10 +69,6 @@ namespace Bonsai.Ephys.Design
                 ImGui.SetCurrentContext(guiContext);
                 ImGuiImplOpenGL3.SetCurrentContext(guiContext);
                 ImGuiImplWin32.SetCurrentContext(guiContext);
-                ImPlot.SetImGuiContext(guiContext);
-
-                plotContext = ImPlot.CreateContext();
-                ImPlot.SetCurrentContext(plotContext);
 
                 var io = ImGui.GetIO();
                 io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;     // Enable Keyboard Controls
@@ -79,11 +76,25 @@ namespace Bonsai.Ephys.Design
                 io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;         // Enable Docking
                 io.IniFilename = null;
 
-                OnConfigure(EventArgs.Empty);
-
                 ImGuiImplWin32.InitForOpenGL(Handle);
                 ImGuiImplOpenGL3.Init((string)null);
+
+                ImPlot.SetImGuiContext(guiContext);
+                plotContext = ImPlot.CreateContext();
+                ImPlot.SetCurrentContext(plotContext);
+                OnConfigure(EventArgs.Empty);
             }
+        }
+
+        public new virtual void MakeCurrent()
+        {
+            base.MakeCurrent();
+            ImGui.SetCurrentContext(guiContext);
+            ImGuiImplWin32.SetCurrentContext(guiContext);
+            ImGuiImplOpenGL3.SetCurrentContext(guiContext);
+
+            ImPlot.SetCurrentContext(plotContext);
+            ImPlot.SetImGuiContext(guiContext);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -91,13 +102,6 @@ namespace Bonsai.Ephys.Design
             if (!DesignMode && HasValidContext && !resizing)
             {
                 MakeCurrent();
-
-                ImGui.SetCurrentContext(guiContext);
-                ImPlot.SetCurrentContext(plotContext);
-                ImPlot.SetImGuiContext(guiContext);
-                ImGuiImplWin32.SetCurrentContext(guiContext);
-                ImGuiImplOpenGL3.SetCurrentContext(guiContext);
-
                 ImGuiImplOpenGL3.NewFrame();
                 ImGuiImplWin32.NewFrame();
                 ImGui.NewFrame();
@@ -132,13 +136,12 @@ namespace Bonsai.Ephys.Design
         {
             if (HasValidContext && !disposed)
             {
-                ImGui.SetCurrentContext(guiContext);
-                ImPlot.SetImGuiContext(guiContext);
+                ImPlot.SetCurrentContext(null);
+                ImPlot.DestroyContext(plotContext);
+
                 ImGuiImplOpenGL3.Shutdown();
                 ImGuiImplWin32.Shutdown();
-                ImPlot.SetCurrentContext(null);
                 ImGui.SetCurrentContext(null);
-                ImPlot.DestroyContext(plotContext);
                 ImGui.DestroyContext(guiContext);
                 disposed = true;
             }
