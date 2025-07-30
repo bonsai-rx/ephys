@@ -11,13 +11,13 @@ namespace Bonsai.Ephys
     /// into SI voltage units.
     /// </summary>
     [Description("Rescales ADC values sampled from RHD2000 data blocks into SI voltage units.")]
-    public class AdcScale : Transform<Mat, Mat>
+    public class Rhd2000AdcScale : Transform<Mat, Mat>
     {
         /// <summary>
         /// Gets or sets the type of the ADC from which the input samples were taken.
         /// </summary>
         [Description("The type of the ADC from which the input samples were taken.")]
-        public AdcType AdcType { get; set; }
+        public Rhd2000AdcType AdcType { get; set; }
 
         /// <summary>
         /// Rescales every RHD2000 ADC value in an observable sequence into SI voltage units.
@@ -38,19 +38,19 @@ namespace Bonsai.Ephys
                 var output = new Mat(input.Size, Depth.F32, input.Channels);
                 switch (AdcType)
                 {
-                    case AdcType.Electrode:
+                    case Rhd2000AdcType.Electrode:
                         CV.ConvertScale(input, output, 0.195, -6389.76);
                         break;
-                    case AdcType.AuxiliaryInput:
+                    case Rhd2000AdcType.AuxiliaryInput:
                         CV.ConvertScale(input, output, 0.0000374, 0);
                         break;
-                    case AdcType.SupplyVoltage:
+                    case Rhd2000AdcType.SupplyVoltage:
                         CV.ConvertScale(input, output, 0.0000748, 0);
                         break;
-                    case AdcType.Temperature:
+                    case Rhd2000AdcType.Temperature:
                         CV.ConvertScale(input, output, 1 / 100.0, 0);
                         break;
-                    case AdcType.BoardAdc:
+                    case Rhd2000AdcType.BoardAdc:
                         CV.ConvertScale(input, output, 0.000050354, 0);
                         break;
                     default:

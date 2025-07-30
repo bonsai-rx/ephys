@@ -3,7 +3,7 @@
     /// <summary>
     /// Specifies the available ADC types in a RHD2000 USB interface board.
     /// </summary>
-    public enum AdcType
+    public enum Rhd2000AdcType
     {
         /// <summary>
         /// Bipolar electrode voltage signals sampled in steps of 0.195 microvolts.

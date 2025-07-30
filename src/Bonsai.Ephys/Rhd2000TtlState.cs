@@ -11,7 +11,7 @@ namespace Bonsai.Ephys
     /// independent channels.
     /// </summary>
     [Description("Demultiplexes TTL digital state into independent channels.")]
-    public class TtlState : Transform<Mat, Mat>
+    public class Rhd2000TtlState : Transform<Mat, Mat>
     {
         /// <summary>
         /// Demultiplexes TTL digital state arrays in an observable sequence into

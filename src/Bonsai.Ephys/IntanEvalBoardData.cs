@@ -8,7 +8,7 @@ namespace Bonsai.Ephys
     /// </summary>
     /// <param name="dataFrame">The buffered electrode amplifier voltage data.</param>
     /// <param name="auxFrame">The buffered auxiliary TTL input data.</param>
-    public class EvalBoardData(Mat dataFrame, Mat auxFrame)
+    public class IntanEvalBoardData(Mat dataFrame, Mat auxFrame)
     {
         /// <summary>
         /// Gets the buffered electrode amplifier voltage data.
