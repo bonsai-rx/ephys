@@ -26,6 +26,8 @@ namespace Bonsai.Ephys.Design
         Decimator decimatorMin;
         Decimator decimatorMax;
         Mat timeRange;
+        Mat minSnap;
+        Mat maxSnap;
 
         int channelHeight = 25;
         int sampleRate = 30000;
@@ -103,39 +105,80 @@ namespace Bonsai.Ephys.Design
 
         void MenuWidgets()
         {
-            ImGui.PushItemWidth(TextBoxWidth);
-
-            var editTimebase = timebase;
-            ImGui.InputDouble("Timebase (s)", ref editTimebase, "%.3g");
-            if (ImGui.IsItemDeactivatedAfterEdit())
-                timebase = editTimebase;
-
-            ImGui.SameLine();
-            if (ImGui.InputInt("Channel Height", ref channelHeight))
-                channelHeight = Math.Max(MinChannelHeight, channelHeight);
-            ImGui.SameLine();
-
-            var selectedTheme = ColorTheme.ToString();
-            if (ImGui.BeginCombo("Color Style", selectedTheme))
+            var tableFlags = ImGuiTableFlags.NoSavedSettings;
+            if (ImGui.BeginTable("##menu", 4, tableFlags))
             {
-                for (int i = 0; i < themeNames.Length; i++)
-                {
-                    var isSelected = themeNames[i] == selectedTheme;
-                    if (ImGui.Selectable(themeNames[i], isSelected))
-                        ColorTheme = (ColorTheme)Enum.Parse(typeof(ColorTheme), themeNames[i]);
-                    if (isSelected)
-                        ImGui.SetItemDefaultFocus();
-                }
-                ImGui.EndCombo();
-            }
+                ImGui.TableNextRow();
+                ImGui.PushItemWidth(TextBoxWidth);
 
-            ImGui.PopItemWidth();
+                ImGui.TableNextColumn();
+                if (ImGui.BeginTable("##timebaseT", 1, tableFlags))
+                {
+                    ImGui.TableNextColumn();
+                    ImGui.Text("Timebase (s)");
+                    var editTimebase = timebase;
+                    ImGui.InputDouble("##timebase", ref editTimebase, "%.3g");
+                    if (ImGui.IsItemDeactivatedAfterEdit())
+                        timebase = editTimebase;
+                    ImGui.EndTable();
+                }
+
+                ImGui.TableNextColumn();
+                if (ImGui.BeginTable("##channelHeightT", 1, tableFlags))
+                {
+                    ImGui.TableNextColumn();
+                    ImGui.Text("Channel Height");
+                    if (ImGui.InputInt("##channelHeight", ref channelHeight))
+                        channelHeight = Math.Max(MinChannelHeight, channelHeight);
+                    ImGui.EndTable();
+                }
+
+                ImGui.TableNextColumn();
+                var buttonSize = new Vector2(100, ImGui.GetFrameHeight() * 2);
+                if (ImGui.Button("Pause", buttonSize))
+                {
+                    if (minSnap is not null)
+                    {
+                        minSnap = null;
+                        maxSnap = null;
+                    }
+                    else
+                    {
+                        minSnap = decimatorMin.Buffer.Clone();
+                        maxSnap = decimatorMax.Buffer.Clone();
+                    }
+                }
+
+                ImGui.TableNextColumn();
+                if (ImGui.BeginTable("##colorThemeT", 1, tableFlags))
+                {
+                    ImGui.TableNextColumn();
+                    ImGui.Text("Colour Scheme");
+                    var selectedTheme = ColorTheme.ToString();
+                    if (ImGui.BeginCombo("##colorTheme", selectedTheme))
+                    {
+                        for (int i = 0; i < themeNames.Length; i++)
+                        {
+                            var isSelected = themeNames[i] == selectedTheme;
+                            if (ImGui.Selectable(themeNames[i], isSelected))
+                                ColorTheme = (ColorTheme)Enum.Parse(typeof(ColorTheme), themeNames[i]);
+                            if (isSelected)
+                                ImGui.SetItemDefaultFocus();
+                        }
+                        ImGui.EndCombo();
+                    }
+                    ImGui.EndTable();
+                }
+
+                ImGui.PopItemWidth();
+                ImGui.EndTable();
+            }
         }
 
-        unsafe void WaveformPlot()
+        unsafe void WaveformPlot(Mat minBuffer, Mat maxBuffer)
         {
-            decimatorMin.Buffer.GetRawData(out IntPtr minPtr, out int minStep, out Size minShape);
-            decimatorMax.Buffer.GetRawData(out IntPtr maxPtr, out int maxStep, out Size maxShape);
+            minBuffer.GetRawData(out IntPtr minPtr, out int minStep, out Size minShape);
+            maxBuffer.GetRawData(out IntPtr maxPtr, out int maxStep, out Size maxShape);
             timeRange.GetRawData(out IntPtr timeRangePtr, out int timeRangeStep, out Size _);
             ImPlot.PushStyleVar(ImPlotStyleVar.FitPadding, new Vector2(0, 0.1f));
             ImPlot.PushStyleVar(ImPlotStyleVar.Padding, new Vector2(0, 0));
@@ -225,7 +268,9 @@ namespace Bonsai.Ephys.Design
                     if (timeRange is not null)
                     {
                         ImGui.BeginChild("##data");
-                        WaveformPlot();
+                        WaveformPlot(
+                            minSnap ?? decimatorMin.Buffer,
+                            maxSnap ?? decimatorMax.Buffer);
                         ImGui.EndChild();
                     }
                 }
@@ -250,9 +295,13 @@ namespace Bonsai.Ephys.Design
             timeRange?.Dispose();
             decimatorMin?.Dispose();
             decimatorMax?.Dispose();
+            minSnap?.Dispose();
+            maxSnap?.Dispose();
             imGuiCanvas?.Dispose();
             imGuiCanvas = null;
             timeRange = null;
+            minSnap = null;
+            maxSnap = null;
         }
     }
 
