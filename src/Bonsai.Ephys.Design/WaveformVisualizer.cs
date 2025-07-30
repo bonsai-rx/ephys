@@ -70,7 +70,113 @@ namespace Bonsai.Ephys.Design
             base.ShowBuffer(values);
         }
 
-        public unsafe override void Load(IServiceProvider provider)
+        void StyleColors()
+        {
+            switch (ColorTheme)
+            {
+                case ColorTheme.Light:
+                    ImGui.StyleColorsLight();
+                    ImPlot.StyleColorsLight(ImPlot.GetStyle());
+                    break;
+                case ColorTheme.Dark:
+                    ImGui.StyleColorsDark();
+                    ImPlot.StyleColorsDark(ImPlot.GetStyle());
+                    break;
+            }
+        }
+
+        void MenuWidgets()
+        {
+            ImGui.PushItemWidth(TextBoxWidth);
+
+            var editTimeBase = timeBase;
+            ImGui.InputDouble("Timebase (s)", ref editTimeBase, "%.3g");
+            if (ImGui.IsItemDeactivatedAfterEdit())
+                timeBase = editTimeBase;
+
+            ImGui.SameLine();
+            if (ImGui.InputInt("Channel Height", ref channelHeight))
+                channelHeight = Math.Max(MinChannelHeight, channelHeight);
+            ImGui.SameLine();
+
+            var selectedTheme = ColorTheme.ToString();
+            if (ImGui.BeginCombo("Color Style", selectedTheme))
+            {
+                for (int i = 0; i < themeNames.Length; i++)
+                {
+                    var isSelected = themeNames[i] == selectedTheme;
+                    if (ImGui.Selectable(themeNames[i], isSelected))
+                        ColorTheme = (ColorTheme)Enum.Parse(typeof(ColorTheme), themeNames[i]);
+                    if (isSelected)
+                        ImGui.SetItemDefaultFocus();
+                }
+                ImGui.EndCombo();
+            }
+
+            ImGui.PopItemWidth();
+        }
+
+        unsafe void WaveformPlot()
+        {
+            decimatorMin.Buffer.GetRawData(out IntPtr minPtr, out int minStep, out Size minShape);
+            decimatorMax.Buffer.GetRawData(out IntPtr maxPtr, out int maxStep, out Size maxShape);
+            timeRange.GetRawData(out IntPtr timeRangePtr, out int timeRangeStep, out Size _);
+            ImPlot.PushStyleVar(ImPlotStyleVar.FitPadding, new Vector2(0, 0.1f));
+            ImPlot.PushStyleVar(ImPlotStyleVar.Padding, new Vector2(0, 0));
+            ImPlot.PushStyleVar(ImPlotStyleVar.BorderSize, 0);
+
+            var tableFlags = ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.ScrollY;
+            var dataPlotFlags = ImPlotFlags.CanvasOnly | ImPlotFlags.NoFrame;
+            var axesFlags = ImPlotAxisFlags.NoHighlight | ImPlotAxisFlags.NoInitialFit | ImPlotAxisFlags.AutoFit;
+            var bareAxesFlags = axesFlags | ImPlotAxisFlags.NoDecorations;
+
+            if (ImGui.BeginTable("##table", 2, tableFlags, new Vector2(-1, -1)))
+            {
+                ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed, 10);
+                ImGui.TableSetupColumn(string.Empty);
+                ImGui.TableSetupScrollFreeze(0, 1);
+
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                var timeLabel = "Time";
+                var cursorPosY = ImGui.GetCursorPosY();
+                ImGui.SetCursorPosY(cursorPosY + TimeChannelHeight / 2);
+                ImGui.Text(timeLabel);
+                ImGui.TableNextColumn();
+                if (ImPlot.BeginPlot(timeLabel, new(-1, TimeChannelHeight), dataPlotFlags))
+                {
+                    ImPlot.SetupAxes(string.Empty, string.Empty, axesFlags, bareAxesFlags);
+                    ImPlot.PlotInfLines(string.Empty, (float*)timeRangePtr, minShape.Width);
+                    ImPlot.EndPlot();
+                }
+
+                for (int i = 0; i < minShape.Height; i++)
+                {
+                    var channelLabel = $"CH{i}";
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    cursorPosY = ImGui.GetCursorPosY();
+                    ImGui.SetCursorPosY(cursorPosY + channelHeight / 2 - 5);
+                    ImGui.Text(channelLabel);
+                    ImGui.TableNextColumn();
+                    if (ImPlot.BeginPlot(channelLabel, new(-1, channelHeight), dataPlotFlags))
+                    {
+                        ImPlot.SetupAxes(string.Empty, channelLabel, bareAxesFlags, bareAxesFlags);
+                        var minLinePtr = (float*)((byte*)minPtr + i * minStep);
+                        var maxLinePtr = (float*)((byte*)maxPtr + i * maxStep);
+                        ImPlot.PlotShaded(string.Empty, (float*)timeRangePtr, minLinePtr, maxLinePtr, minShape.Width);
+                        ImPlot.PlotLine(string.Empty, (float*)timeRangePtr, minLinePtr, minShape.Width);
+                        ImPlot.PlotLine(string.Empty, (float*)timeRangePtr, maxLinePtr, maxShape.Width);
+                        ImPlot.EndPlot();
+                    }
+                }
+                ImGui.EndTable();
+            }
+
+            ImPlot.PopStyleVar();
+        }
+
+        public override void Load(IServiceProvider provider)
         {
             var context = (ITypeVisualizerContext)provider.GetService(typeof(ITypeVisualizerContext));
             if (ExpressionBuilder.GetVisualizerElement(context.Source).Builder is WaveformVisualizerBuilder visualizerBuilder)
@@ -92,110 +198,20 @@ namespace Bonsai.Ephys.Design
                     ImGui.GetMainViewport(),
                     ImGuiDockNodeFlags.AutoHideTabBar | ImGuiDockNodeFlags.NoUndocking);
 
-                switch (ColorTheme)
+                StyleColors();
+                if (ImGui.Begin(nameof(WaveformVisualizer)))
                 {
-                    case ColorTheme.Light:
-                        ImGui.StyleColorsLight();
-                        ImPlot.StyleColorsLight(ImPlot.GetStyle());
-                        break;
-                    case ColorTheme.Dark:
-                        ImGui.StyleColorsDark();
-                        ImPlot.StyleColorsDark(ImPlot.GetStyle());
-                        break;
+                    MenuWidgets();
+                    if (timeRange is not null)
+                    {
+                        ImGui.BeginChild("##data");
+                        WaveformPlot();
+                        ImGui.EndChild();
+                    }
                 }
 
-                ImGui.Begin(nameof(WaveformVisualizer));
-                ImGui.PushItemWidth(TextBoxWidth);
-
-                var editTimeBase = timeBase;
-                ImGui.InputDouble("Timebase (s)", ref editTimeBase, "%.3g");
-                if (ImGui.IsItemDeactivatedAfterEdit())
-                    timeBase = editTimeBase;
-
-                ImGui.SameLine();
-                if (ImGui.InputInt("Channel Height", ref channelHeight))
-                    channelHeight = Math.Max(MinChannelHeight, channelHeight);
-                ImGui.SameLine();
-
-                var selectedTheme = ColorTheme.ToString();
-                if (ImGui.BeginCombo("Color Style", selectedTheme))
-                {
-                    for (int i = 0; i < themeNames.Length; i++)
-                    {
-                        var isSelected = themeNames[i] == selectedTheme;
-                        if (ImGui.Selectable(themeNames[i], isSelected))
-                            ColorTheme = (ColorTheme)Enum.Parse(typeof(ColorTheme), themeNames[i]);
-                        if (isSelected)
-                            ImGui.SetItemDefaultFocus();
-                    }
-                    ImGui.EndCombo();
-                }
-                ImGui.PopItemWidth();
-
-                if (timeRange is null)
-                    goto end;
-
-                decimatorMin.Buffer.GetRawData(out IntPtr minPtr, out int minStep, out Size minShape);
-                decimatorMax.Buffer.GetRawData(out IntPtr maxPtr, out int maxStep, out Size maxShape);
-                timeRange.GetRawData(out IntPtr timeRangePtr, out int timeRangeStep, out Size _);
-                ImPlot.PushStyleVar(ImPlotStyleVar.FitPadding, new Vector2(0, 0.1f));
-                ImPlot.PushStyleVar(ImPlotStyleVar.Padding, new Vector2(0, 0));
-                ImPlot.PushStyleVar(ImPlotStyleVar.BorderSize, 0);
-
-                var tableFlags = ImGuiTableFlags.NoSavedSettings | ImGuiTableFlags.ScrollY;
-                var dataPlotFlags = ImPlotFlags.CanvasOnly | ImPlotFlags.NoFrame;
-                var axesFlags = ImPlotAxisFlags.NoHighlight | ImPlotAxisFlags.NoInitialFit | ImPlotAxisFlags.AutoFit;
-                var bareAxesFlags = axesFlags | ImPlotAxisFlags.NoDecorations;
-
-                ImGui.BeginChild("##data");
-                if (ImGui.BeginTable("##table", 2, tableFlags, new Vector2(-1, -1)))
-                {
-                    ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed, 10);
-                    ImGui.TableSetupColumn(string.Empty);
-                    ImGui.TableSetupScrollFreeze(0, 1);
-
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    var timeLabel = "Time";
-                    var cursorPosY = ImGui.GetCursorPosY();
-                    ImGui.SetCursorPosY(cursorPosY + TimeChannelHeight / 2);
-                    ImGui.Text(timeLabel);
-                    ImGui.TableNextColumn();
-                    if (ImPlot.BeginPlot(timeLabel, new(-1, TimeChannelHeight), dataPlotFlags))
-                    {
-                        ImPlot.SetupAxes(string.Empty, string.Empty, axesFlags, bareAxesFlags);
-                        ImPlot.PlotInfLines(string.Empty, (float*)timeRangePtr, minShape.Width);
-                        ImPlot.EndPlot();
-                    }
-
-                    for (int i = 0; i < minShape.Height; i++)
-                    {
-                        var channelLabel = $"CH{i}";
-                        ImGui.TableNextRow();
-                        ImGui.TableNextColumn();
-                        cursorPosY = ImGui.GetCursorPosY();
-                        ImGui.SetCursorPosY(cursorPosY + channelHeight / 2 - 5);
-                        ImGui.Text(channelLabel);
-                        ImGui.TableNextColumn();
-                        if (ImPlot.BeginPlot(channelLabel, new(-1, channelHeight), dataPlotFlags))
-                        {
-                            ImPlot.SetupAxes(string.Empty, channelLabel, bareAxesFlags, bareAxesFlags);
-                            var minLinePtr = (float*)((byte*)minPtr + i * minStep);
-                            var maxLinePtr = (float*)((byte*)maxPtr + i * maxStep);
-                            ImPlot.PlotShaded(string.Empty, (float*)timeRangePtr, minLinePtr, maxLinePtr, minShape.Width);
-                            ImPlot.PlotLine(string.Empty, (float*)timeRangePtr, minLinePtr, minShape.Width);
-                            ImPlot.PlotLine(string.Empty, (float*)timeRangePtr, maxLinePtr, maxShape.Width);
-                            ImPlot.EndPlot();
-                        }
-                    }
-                    ImGui.EndTable();
-                }
-                
-                ImPlot.PopStyleVar();
-                ImGui.EndChild();
-
-                end:
                 ImGui.End();
+
                 if (!ImGui.IsWindowDocked() &&
                     ImGuiP.DockBuilderGetCentralNode(dockspaceId) is ImGuiDockNodePtr node &&
                     !node.IsNull)
@@ -205,10 +221,7 @@ namespace Bonsai.Ephys.Design
             };
 
             var visualizerService = (IDialogTypeVisualizerService)provider.GetService(typeof(IDialogTypeVisualizerService));
-            if (visualizerService != null)
-            {
-                visualizerService.AddControl(imGuiCanvas);
-            }
+            visualizerService?.AddControl(imGuiCanvas);
         }
 
         public override void Unload()
