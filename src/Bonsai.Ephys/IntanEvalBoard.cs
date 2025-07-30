@@ -13,18 +13,18 @@ namespace Bonsai.Ephys
     /// </summary>
     [Description("Generates a sequence of buffered samples acquired from an RHA2000-EVAL board.")]
     [Editor("Bonsai.Ephys.Design.IntanEvalBoardEditor, Bonsai.Ephys.Design", typeof(ComponentEditor))]
-    public class IntanEvalBoard : Source<EvalBoardData>
+    public class IntanEvalBoard : Source<IntanEvalBoardData>
     {
         bool settle;
         readonly IntanUsbSource usbSource = new();
-        readonly IObservable<EvalBoardData> source;
+        readonly IObservable<IntanEvalBoardData> source;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IntanEvalBoard"/> class.
         /// </summary>
         public IntanEvalBoard()
         {
-            source = Observable.Create<EvalBoardData>(observer =>
+            source = Observable.Create<IntanEvalBoardData>(observer =>
             {
                 settle = false;
                 int firmwareID1 = 0;
@@ -43,7 +43,7 @@ namespace Bonsai.Ephys
                         {
                             var dataOutput = Mat.FromArray(data.DataFrame);
                             var auxOutput = Mat.FromArray(data.AuxFrame);
-                            observer.OnNext(new EvalBoardData(dataOutput, auxOutput));
+                            observer.OnNext(new IntanEvalBoardData(dataOutput, auxOutput));
                         }
                     }
                 });
@@ -127,10 +127,10 @@ namespace Bonsai.Ephys
         /// RHA2000-EVAL board.
         /// </summary>
         /// <returns>
-        /// A sequence of <see cref="EvalBoardData"/> objects containing buffered amplifier
+        /// A sequence of <see cref="IntanEvalBoardData"/> objects containing buffered amplifier
         /// voltage and auxiliary TTL input data sampled from an RHA2000-EVAL board.
         /// </returns>
-        public override IObservable<EvalBoardData> Generate()
+        public override IObservable<IntanEvalBoardData> Generate()
         {
             return source;
         }
