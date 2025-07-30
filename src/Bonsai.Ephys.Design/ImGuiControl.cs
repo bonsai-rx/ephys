@@ -76,7 +76,7 @@ namespace Bonsai.Ephys.Design
                 io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;         // Enable Docking
                 io.IniFilename = null;
 
-                ImGuiImplWin32.InitForOpenGL(Handle);
+                ImGuiImplWin32.InitForOpenGL(Handle.ToPointer());
                 ImGuiImplOpenGL3.Init((string)null);
 
                 ImPlot.SetImGuiContext(guiContext);
