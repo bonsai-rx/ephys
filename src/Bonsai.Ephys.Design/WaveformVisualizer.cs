@@ -21,6 +21,20 @@ namespace Bonsai.Ephys.Design
         const int MinChannelHeight = 10;
         const int TimeChannelHeight = 25;
         static readonly string[] ThemeNames = Enum.GetNames(typeof(ColorTheme));
+        static readonly double[] StandardTimeBases = new[]
+        {
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            10.0,
+            20.0
+        };
 
         ImGuiControl imGuiCanvas;
         Decimator decimatorMin;
@@ -32,7 +46,7 @@ namespace Bonsai.Ephys.Design
         int channelHeight = 20;
         int sampleRate = 30000;
         int maxSamplesPerChannel = 1920;
-        double timebase = 1.0;
+        double timebase = 2.0;
         int colorGrouping = 1;
 
         /// <summary>
@@ -113,6 +127,28 @@ namespace Bonsai.Ephys.Design
             }
         }
 
+        void InputDoubleCombo(string label, string comboLabel, ref double value, double[] comboItems)
+        {
+            var editValue = value;
+            ImGui.InputDouble(label, ref editValue, "%.3g");
+            if (ImGui.IsItemDeactivatedAfterEdit())
+                value = editValue;
+            ImGui.SameLine(0, 0);
+            var comboFlags = ImGuiComboFlags.NoPreview | ImGuiComboFlags.PopupAlignLeft;
+            if (ImGui.BeginCombo(comboLabel, string.Empty, comboFlags))
+            {
+                for (int i = 0; i < comboItems.Length; i++)
+                {
+                    var isSelected = value == comboItems[i];
+                    if (ImGui.Selectable(comboItems[i].ToString(), isSelected))
+                        value = comboItems[i];
+                    if (isSelected)
+                        ImGui.SetItemDefaultFocus();
+                }
+                ImGui.EndCombo();
+            }
+        }
+
         void MenuWidgets()
         {
             var tableFlags = ImGuiTableFlags.NoSavedSettings;
@@ -126,10 +162,7 @@ namespace Bonsai.Ephys.Design
                 {
                     ImGui.TableNextColumn();
                     ImGui.Text("Timebase (s)");
-                    var editTimebase = timebase;
-                    ImGui.InputDouble("##timebase", ref editTimebase, "%.3g");
-                    if (ImGui.IsItemDeactivatedAfterEdit())
-                        timebase = editTimebase;
+                    InputDoubleCombo("##timebase", "##timebaseC", ref timebase, StandardTimeBases);
                     ImGui.EndTable();
                 }
 
