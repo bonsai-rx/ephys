@@ -188,9 +188,14 @@ namespace Bonsai.Ephys.Design
                 if (ImGui.BeginTable("##channelHeightT"u8, 1, tableFlags))
                 {
                     ImGui.TableNextColumn();
-                    ImGui.Text("Channel Height"u8);
-                    if (ImGui.InputInt("##channelHeight"u8, ref channelHeight))
-                        channelHeight = Math.Max(MinChannelHeight, channelHeight);
+                    ImGui.Text("Chan. Height"u8);
+                    ImGui.DragInt(
+                        "##channelHeight"u8,
+                        ref channelHeight,
+                        vSpeed: 1,
+                        MinChannelHeight,
+                        int.MaxValue,
+                        ImGuiSliderFlags.AlwaysClamp);
                     ImGui.EndTable();
                 }
 
