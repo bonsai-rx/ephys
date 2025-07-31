@@ -90,7 +90,10 @@ namespace Bonsai.Ephys.Design
             {
                 var totalSamples = (int)(timebase * sampleRate);
                 var samplesPerBin = Math.Max(1, totalSamples / maxSamplesPerChannel);
-                if (timeRange is null || decimatorMin.Buffer.Rows != data.Rows || decimatorMin.DownsampleFactor != samplesPerBin)
+                if (timeRange is null ||
+                    decimatorMin.Buffer.Rows != data.Rows ||
+                    decimatorMin.InputDepth != data.Depth ||
+                    decimatorMin.DownsampleFactor != samplesPerBin)
                 {
                     timeRange?.Dispose();
                     decimatorMin?.Dispose();

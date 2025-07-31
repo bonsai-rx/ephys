@@ -10,7 +10,9 @@ namespace Bonsai.Ephys.Design
         int inputIndex;
         readonly Mat buffer;
         readonly Mat carryBuffer;
+        readonly Mat conversionBuffer;
         readonly int downsampleFactor;
+        readonly Depth inputDepth;
         readonly ReduceOperation reduceOp;
 
         public Decimator(Mat input, int length, int factor, ReduceOperation reduceOperation)
@@ -23,19 +25,30 @@ namespace Bonsai.Ephys.Design
 
             outputIndex = 0;
             downsampleFactor = factor;
+            inputDepth = input.Depth;
             carry = downsampleFactor;
-            carryBuffer = new Mat(input.Rows, 1, input.Depth, input.Channels);
-            buffer = new Mat(input.Rows, length, input.Depth, input.Channels);
+            carryBuffer = new Mat(input.Rows, 1, Depth.F32, input.Channels);
+            buffer = new Mat(input.Rows, length, Depth.F32, input.Channels);
             buffer.Set(Scalar.All(double.NaN));
             reduceOp = reduceOperation;
+            if (inputDepth != Depth.F32)
+                conversionBuffer = new Mat(input.Size, Depth.F32, input.Channels);
         }
 
         public Mat Buffer => buffer;
 
         public int DownsampleFactor => downsampleFactor;
 
+        public Depth InputDepth => inputDepth;
+
         public void Process(Mat input)
         {
+            if (conversionBuffer is not null)
+            {
+                CV.Convert(input, conversionBuffer);
+                input = conversionBuffer;
+            }
+
             while (inputIndex < input.Cols)
             {
                 var inputSamples = Math.Min(input.Cols - inputIndex, carry);
@@ -79,6 +92,7 @@ namespace Bonsai.Ephys.Design
         {
             buffer.Dispose();
             carryBuffer.Dispose();
+            conversionBuffer?.Dispose();
         }
     }
 }
