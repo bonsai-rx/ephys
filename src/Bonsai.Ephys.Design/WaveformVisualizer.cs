@@ -158,7 +158,7 @@ namespace Bonsai.Ephys.Design
             }
         }
 
-        void MenuWidgets()
+        unsafe void MenuWidgets()
         {
             var tableFlags = ImGuiTableFlags.NoSavedSettings;
             if (ImGui.BeginTable("##menu"u8, 5, tableFlags))
@@ -186,8 +186,16 @@ namespace Bonsai.Ephys.Design
                 }
 
                 ImGui.TableNextColumn();
+
+                var isButtonPressed = minSnap is not null;
+                if (isButtonPressed)
+                {
+                    var buttonPressedColor = ImGui.GetColorU32(ImGuiCol.ButtonActive);
+                    ImGui.PushStyleColor(ImGuiCol.Button, buttonPressedColor);
+                }
+
                 var buttonSize = new Vector2(TextBoxWidth, ImGui.GetFrameHeight() * 2);
-                if (ImGui.Button("Pause"u8, buttonSize))
+                if (ImGui.Button("Pause"u8, buttonSize) || ImGui.IsKeyPressed(ImGuiKey.Space))
                 {
                     if (minSnap is not null)
                     {
@@ -200,6 +208,9 @@ namespace Bonsai.Ephys.Design
                         maxSnap = decimatorMax.Buffer.Clone();
                     }
                 }
+
+                if (isButtonPressed)
+                    ImGui.PopStyleColor();
 
                 ImGui.TableNextColumn();
                 if (ImGui.BeginTable("##colorThemeT"u8, 1, tableFlags))
