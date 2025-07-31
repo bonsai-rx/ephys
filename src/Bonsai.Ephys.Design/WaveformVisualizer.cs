@@ -17,10 +17,10 @@ namespace Bonsai.Ephys.Design
     /// </summary>
     public class WaveformVisualizer : BufferedVisualizer
     {
-        const int TextBoxWidth = 100;
+        const int TextBoxWidth = 80;
         const int MinChannelHeight = 10;
         const int TimeChannelHeight = 25;
-        static readonly string[] themeNames = Enum.GetNames(typeof(ColorTheme));
+        static readonly string[] ThemeNames = Enum.GetNames(typeof(ColorTheme));
 
         ImGuiControl imGuiCanvas;
         Decimator decimatorMin;
@@ -29,7 +29,7 @@ namespace Bonsai.Ephys.Design
         Mat minSnap;
         Mat maxSnap;
 
-        int channelHeight = 25;
+        int channelHeight = 20;
         int sampleRate = 30000;
         int maxSamplesPerChannel = 1920;
         double timebase = 1.0;
@@ -144,7 +144,7 @@ namespace Bonsai.Ephys.Design
                 }
 
                 ImGui.TableNextColumn();
-                var buttonSize = new Vector2(100, ImGui.GetFrameHeight() * 2);
+                var buttonSize = new Vector2(TextBoxWidth, ImGui.GetFrameHeight() * 2);
                 if (ImGui.Button("Pause", buttonSize))
                 {
                     if (minSnap is not null)
@@ -167,11 +167,11 @@ namespace Bonsai.Ephys.Design
                     var selectedTheme = ColorTheme.ToString();
                     if (ImGui.BeginCombo("##colorTheme", selectedTheme))
                     {
-                        for (int i = 0; i < themeNames.Length; i++)
+                        for (int i = 0; i < ThemeNames.Length; i++)
                         {
-                            var isSelected = themeNames[i] == selectedTheme;
-                            if (ImGui.Selectable(themeNames[i], isSelected))
-                                ColorTheme = (ColorTheme)Enum.Parse(typeof(ColorTheme), themeNames[i]);
+                            var isSelected = ThemeNames[i] == selectedTheme;
+                            if (ImGui.Selectable(ThemeNames[i], isSelected))
+                                ColorTheme = (ColorTheme)Enum.Parse(typeof(ColorTheme), ThemeNames[i]);
                             if (isSelected)
                                 ImGui.SetItemDefaultFocus();
                         }
