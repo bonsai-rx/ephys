@@ -131,11 +131,12 @@ namespace Bonsai.Ephys.Design
             }
         }
 
-        unsafe void InputDoubleCombo(ReadOnlySpan<byte> label, ref double value, double[] comboItems)
+        unsafe bool InputDoubleCombo(ReadOnlySpan<byte> label, ref double value, double[] comboItems)
         {
+            var changed = false;
             var editValue = value;
-            ImGui.InputDouble(label, ref editValue, "%.3g"u8);
-            if (ImGui.IsItemDeactivatedAfterEdit())
+            ImGui.InputDouble(label, ref editValue, "%.2g"u8);
+            if (changed = ImGui.IsItemDeactivatedAfterEdit())
                 value = editValue;
             ImGui.SameLine(0, 0);
 
@@ -152,13 +153,18 @@ namespace Bonsai.Ephys.Design
                 for (int i = 0; i < comboItems.Length; i++)
                 {
                     var isSelected = value == comboItems[i];
-                    if (ImGui.Selectable(comboItems[i].ToString(), isSelected))
+                    if (ImGui.Selectable(comboItems[i].ToString("G2"), isSelected))
+                    {
                         value = comboItems[i];
+                        changed = true;
+                    }
                     if (isSelected)
                         ImGui.SetItemDefaultFocus();
                 }
                 ImGui.EndCombo();
             }
+
+            return changed;
         }
 
         unsafe void MenuWidgets()
