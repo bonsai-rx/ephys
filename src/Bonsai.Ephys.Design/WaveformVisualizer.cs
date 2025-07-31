@@ -2,6 +2,7 @@
 using Bonsai.Expressions;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImPlot;
+using Hexa.NET.Utilities.Text;
 using OpenCV.Net;
 using System;
 using System.Collections.Generic;
@@ -127,13 +128,21 @@ namespace Bonsai.Ephys.Design
             }
         }
 
-        void InputDoubleCombo(string label, string comboLabel, ref double value, double[] comboItems)
+        unsafe void InputDoubleCombo(ReadOnlySpan<byte> label, ref double value, double[] comboItems)
         {
             var editValue = value;
-            ImGui.InputDouble(label, ref editValue, "%.3g");
+            ImGui.InputDouble(label, ref editValue, "%.3g"u8);
             if (ImGui.IsItemDeactivatedAfterEdit())
                 value = editValue;
             ImGui.SameLine(0, 0);
+
+            var labelBuffer = stackalloc byte[64];
+            var comboLabel = new StrBuilder(labelBuffer, 64);
+            comboLabel.Reset();
+            comboLabel.Append(label);
+            comboLabel.Append("C"u8);
+            comboLabel.End();
+
             var comboFlags = ImGuiComboFlags.NoPreview | ImGuiComboFlags.PopupAlignLeft;
             if (ImGui.BeginCombo(comboLabel, string.Empty, comboFlags))
             {
@@ -152,33 +161,33 @@ namespace Bonsai.Ephys.Design
         void MenuWidgets()
         {
             var tableFlags = ImGuiTableFlags.NoSavedSettings;
-            if (ImGui.BeginTable("##menu", 5, tableFlags))
+            if (ImGui.BeginTable("##menu"u8, 5, tableFlags))
             {
                 ImGui.TableNextRow();
                 ImGui.PushItemWidth(TextBoxWidth);
 
                 ImGui.TableNextColumn();
-                if (ImGui.BeginTable("##timebaseT", 1, tableFlags))
+                if (ImGui.BeginTable("##timebaseT"u8, 1, tableFlags))
                 {
                     ImGui.TableNextColumn();
-                    ImGui.Text("Timebase (s)");
-                    InputDoubleCombo("##timebase", "##timebaseC", ref timebase, StandardTimeBases);
+                    ImGui.Text("Timebase (s)"u8);
+                    InputDoubleCombo("##timebase"u8, ref timebase, StandardTimeBases);
                     ImGui.EndTable();
                 }
 
                 ImGui.TableNextColumn();
-                if (ImGui.BeginTable("##channelHeightT", 1, tableFlags))
+                if (ImGui.BeginTable("##channelHeightT"u8, 1, tableFlags))
                 {
                     ImGui.TableNextColumn();
-                    ImGui.Text("Channel Height");
-                    if (ImGui.InputInt("##channelHeight", ref channelHeight))
+                    ImGui.Text("Channel Height"u8);
+                    if (ImGui.InputInt("##channelHeight"u8, ref channelHeight))
                         channelHeight = Math.Max(MinChannelHeight, channelHeight);
                     ImGui.EndTable();
                 }
 
                 ImGui.TableNextColumn();
                 var buttonSize = new Vector2(TextBoxWidth, ImGui.GetFrameHeight() * 2);
-                if (ImGui.Button("Pause", buttonSize))
+                if (ImGui.Button("Pause"u8, buttonSize))
                 {
                     if (minSnap is not null)
                     {
@@ -193,12 +202,12 @@ namespace Bonsai.Ephys.Design
                 }
 
                 ImGui.TableNextColumn();
-                if (ImGui.BeginTable("##colorThemeT", 1, tableFlags))
+                if (ImGui.BeginTable("##colorThemeT"u8, 1, tableFlags))
                 {
                     ImGui.TableNextColumn();
-                    ImGui.Text("Colour Scheme");
+                    ImGui.Text("Colour Scheme"u8);
                     var selectedTheme = ColorTheme.ToString();
-                    if (ImGui.BeginCombo("##colorTheme", selectedTheme))
+                    if (ImGui.BeginCombo("##colorTheme"u8, selectedTheme))
                     {
                         for (int i = 0; i < ThemeNames.Length; i++)
                         {
@@ -214,11 +223,11 @@ namespace Bonsai.Ephys.Design
                 }
 
                 ImGui.TableNextColumn();
-                if (ImGui.BeginTable("##colorGroupingT", 1, tableFlags))
+                if (ImGui.BeginTable("##colorGroupingT"u8, 1, tableFlags))
                 {
                     ImGui.TableNextColumn();
-                    ImGui.Text("Colour Groups");
-                    if (ImGui.InputInt("##colorGrouping", ref colorGrouping))
+                    ImGui.Text("Colour Groups"u8);
+                    if (ImGui.InputInt("##colorGrouping"u8, ref colorGrouping))
                         colorGrouping = Math.Max(1, colorGrouping);
                     ImGui.EndTable();
                 }
@@ -242,7 +251,7 @@ namespace Bonsai.Ephys.Design
             var axesFlags = ImPlotAxisFlags.NoHighlight | ImPlotAxisFlags.NoInitialFit | ImPlotAxisFlags.AutoFit;
             var bareAxesFlags = axesFlags | ImPlotAxisFlags.NoDecorations;
 
-            if (ImGui.BeginTable("##table", 2, tableFlags, new Vector2(-1, -1)))
+            if (ImGui.BeginTable("##table"u8, 2, tableFlags, new Vector2(-1, -1)))
             {
                 ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed, 10);
                 ImGui.TableSetupColumn(string.Empty);
@@ -250,7 +259,7 @@ namespace Bonsai.Ephys.Design
 
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                var timeLabel = "Time";
+                var timeLabel = "Time"u8;
                 var cursorPosY = ImGui.GetCursorPosY();
                 ImGui.SetCursorPosY(cursorPosY + TimeChannelHeight / 2);
                 ImGui.Text(timeLabel);
@@ -264,7 +273,13 @@ namespace Bonsai.Ephys.Design
 
                 for (int i = 0; i < minShape.Height; i++)
                 {
-                    var channelLabel = $"CH{i}";
+                    var labelBuffer = stackalloc byte[32];
+                    var channelLabel = new StrBuilder(labelBuffer, 32);
+                    channelLabel.Reset();
+                    channelLabel.Append("CH"u8);
+                    channelLabel.Append(i);
+                    channelLabel.End();
+
                     var channelColor = ImPlot.GetColormapColor(i / colorGrouping);
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
@@ -322,7 +337,7 @@ namespace Bonsai.Ephys.Design
                     MenuWidgets();
                     if (timeRange is not null)
                     {
-                        ImGui.BeginChild("##data");
+                        ImGui.BeginChild("##data"u8);
                         WaveformPlot(
                             minSnap ?? decimatorMin.Buffer,
                             maxSnap ?? decimatorMax.Buffer);
