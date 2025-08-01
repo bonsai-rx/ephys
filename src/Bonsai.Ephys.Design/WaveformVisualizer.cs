@@ -50,7 +50,7 @@ namespace Bonsai.Ephys.Design
         double timebase = 2.0;
         int colorGrouping = 1;
 
-        bool autoFitRange;
+        bool useFixedRange;
         float rangeAmplitude;
         float rangeOffset;
         string rangeLabel;
@@ -91,13 +91,13 @@ namespace Bonsai.Ephys.Design
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether to auto-fit the amplitude range of the
-        /// visualizer display for each channel.
+        /// Gets or sets a value indicating whether to use a fixed amplitude range; otherwise,
+        /// the visualizer display will auto-fit the amplitude range for each channel.
         /// </summary>
-        public bool AutoFitRange
+        public bool UseFixedRange
         {
-            get => autoFitRange;
-            set => autoFitRange = value;
+            get => useFixedRange;
+            set => useFixedRange = value;
         }
 
         /// <summary>
@@ -246,6 +246,7 @@ namespace Bonsai.Ephys.Design
                     // so here we are adjusting to cover equally as much scale as possible
                     // within a 32-bit floating point
                     ImGui.Text(rangeInputLabel);
+                    ImGui.BeginDisabled(!useFixedRange);
                     if (ImGui.DragFloat(
                         "##range"u8,
                         ref rangeAmplitude,
@@ -257,9 +258,10 @@ namespace Bonsai.Ephys.Design
                     {
                         UpdateRangeLimits();
                     }
+                    ImGui.EndDisabled();
 
                     ImGui.SameLine(0);
-                    ImGui.Checkbox("##autofit"u8, ref autoFitRange);
+                    ImGui.Checkbox("##autofit"u8, ref useFixedRange);
                     ImGui.EndTable();
                 }
 
@@ -385,7 +387,7 @@ namespace Bonsai.Ephys.Design
                     {
                         ImPlot.PushStyleColor(ImPlotCol.Line, channelColor);
                         ImPlot.SetupAxes(string.Empty, channelLabel, bareAxesFlags, bareAxesFlags);
-                        if (!autoFitRange)
+                        if (useFixedRange)
                             ImPlot.SetupAxisLimits(ImAxis.Y1, vMin, vMax, ImPlotCond.Always);
 
                         var minLinePtr = (float*)((byte*)minPtr + i * minStep);
@@ -417,7 +419,7 @@ namespace Bonsai.Ephys.Design
                     timebase = visualizerBuilder.Timebase.GetValueOrDefault();
                 if (visualizerBuilder.ColorGrouping.HasValue)
                     colorGrouping = visualizerBuilder.ColorGrouping.GetValueOrDefault();
-                autoFitRange = !visualizerBuilder.RangeAmplitude.HasValue;
+                useFixedRange = visualizerBuilder.RangeAmplitude.HasValue;
                 rangeAmplitude = (float)visualizerBuilder.RangeAmplitude.GetValueOrDefault();
                 rangeOffset = (float)visualizerBuilder.RangeOffset.GetValueOrDefault();
                 rangeLabel = visualizerBuilder.RangeLabel;
