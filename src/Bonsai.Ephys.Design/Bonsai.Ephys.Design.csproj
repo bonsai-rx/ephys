@@ -5,11 +5,16 @@
     <Description>Bonsai Design Library containing editor classes for ephys board configuration.</Description>
     <PackageTags>$(PackageTags) Editors</PackageTags>
     <TargetFramework>net472</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Bonsai.Design" Version="2.5.0" />
+    <PackageReference Include="Bonsai.Dsp.Design" Version="2.9.0" />
+    <PackageReference Include="Hexa.NET.ImGui" Version="2.2.8" />
+    <PackageReference Include="Hexa.NET.ImGui.Backends" Version="1.0.17" />
+    <PackageReference Include="Hexa.NET.ImPlot" Version="2.2.8" />
+    <PackageReference Include="OpenTK.GLControl" Version="3.1.0" />
   </ItemGroup>
 
   <ItemGroup>
