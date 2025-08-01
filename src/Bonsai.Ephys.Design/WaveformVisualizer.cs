@@ -18,7 +18,7 @@ namespace Bonsai.Ephys.Design
     /// </summary>
     public class WaveformVisualizer : BufferedVisualizer
     {
-        const int TextBoxWidth = 80;
+        const float TextBoxWidth = 80;
         const int MinChannelHeight = 10;
         const int TimeChannelHeight = 25;
         static readonly string[] ThemeNames = Enum.GetNames(typeof(ColorTheme));
@@ -49,6 +49,13 @@ namespace Bonsai.Ephys.Design
         int maxSamplesPerChannel = 1920;
         double timebase = 2.0;
         int colorGrouping = 1;
+
+        bool autoFitRange;
+        float rangeAmplitude;
+        float rangeOffset;
+        string rangeLabel;
+        double vMin;
+        double vMax;
 
         /// <summary>
         /// Gets or sets a value specifying the color theme used to style the
@@ -81,6 +88,25 @@ namespace Bonsai.Ephys.Design
         {
             get => colorGrouping;
             set => colorGrouping = value;
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to auto-fit the amplitude range of the
+        /// visualizer display for each channel.
+        /// </summary>
+        public bool AutoFitRange
+        {
+            get => autoFitRange;
+            set => autoFitRange = value;
+        }
+
+        /// <summary>
+        /// Gets or sets a value specifying the fixed maximum amplitude of the waveform signal.
+        /// </summary>
+        public double RangeAmplitude
+        {
+            get => rangeAmplitude;
+            set => rangeAmplitude = (float)value;
         }
 
         /// <inheritdoc/>
@@ -170,7 +196,7 @@ namespace Bonsai.Ephys.Design
         unsafe void MenuWidgets()
         {
             var tableFlags = ImGuiTableFlags.NoSavedSettings;
-            if (ImGui.BeginTable("##menu"u8, 5, tableFlags))
+            if (ImGui.BeginTable("##menu"u8, columns: 6, tableFlags))
             {
                 ImGui.TableNextRow();
                 ImGui.PushItemWidth(TextBoxWidth);
@@ -200,7 +226,44 @@ namespace Bonsai.Ephys.Design
                 }
 
                 ImGui.TableNextColumn();
+                if (ImGui.BeginTable("##rangeT"u8, 1, tableFlags))
+                {
+                    ImGui.TableNextColumn();
+                    var labelBuffer = stackalloc byte[128];
+                    var rangeInputLabel = new StrBuilder(labelBuffer, 128);
+                    rangeInputLabel.Reset();
+                    rangeInputLabel.Append("Range"u8);
+                    if (!string.IsNullOrEmpty(rangeLabel))
+                    {
+                        rangeInputLabel.Append(' ');
+                        rangeInputLabel.Append('(');
+                        rangeInputLabel.Append(rangeLabel);
+                        rangeInputLabel.Append(')');
+                    }
+                    rangeInputLabel.End();
 
+                    // Logarithmic curve is calculated on the basis of limit range
+                    // so here we are adjusting to cover equally as much scale as possible
+                    // within a 32-bit floating point
+                    ImGui.Text(rangeInputLabel);
+                    if (ImGui.DragFloat(
+                        "##range"u8,
+                        ref rangeAmplitude,
+                        vSpeed: 1e30f,
+                        vMin: 0,
+                        vMax: 1e35f,
+                        format: "%.3g"u8,
+                        ImGuiSliderFlags.Logarithmic))
+                    {
+                        UpdateRangeLimits();
+                    }
+
+                    ImGui.SameLine(0);
+                    ImGui.Checkbox("##autofit"u8, ref autoFitRange);
+                    ImGui.EndTable();
+                }
+
+                ImGui.TableNextColumn();
                 var isButtonPressed = minSnap is not null;
                 if (isButtonPressed)
                 {
@@ -262,6 +325,12 @@ namespace Bonsai.Ephys.Design
             }
         }
 
+        void UpdateRangeLimits()
+        {
+            vMin = -rangeAmplitude / 2 + rangeOffset;
+            vMax = rangeAmplitude / 2 + rangeOffset;
+        }
+
         unsafe void WaveformPlot(Mat minBuffer, Mat maxBuffer)
         {
             minBuffer.GetRawData(out IntPtr minPtr, out int minStep, out Size minShape);
@@ -316,6 +385,9 @@ namespace Bonsai.Ephys.Design
                     {
                         ImPlot.PushStyleColor(ImPlotCol.Line, channelColor);
                         ImPlot.SetupAxes(string.Empty, channelLabel, bareAxesFlags, bareAxesFlags);
+                        if (!autoFitRange)
+                            ImPlot.SetupAxisLimits(ImAxis.Y1, vMin, vMax, ImPlotCond.Always);
+
                         var minLinePtr = (float*)((byte*)minPtr + i * minStep);
                         var maxLinePtr = (float*)((byte*)maxPtr + i * maxStep);
                         ImPlot.PlotShaded(string.Empty, (float*)timeRangePtr, minLinePtr, maxLinePtr, minShape.Width);
@@ -345,6 +417,11 @@ namespace Bonsai.Ephys.Design
                     timebase = visualizerBuilder.Timebase.GetValueOrDefault();
                 if (visualizerBuilder.ColorGrouping.HasValue)
                     colorGrouping = visualizerBuilder.ColorGrouping.GetValueOrDefault();
+                autoFitRange = !visualizerBuilder.RangeAmplitude.HasValue;
+                rangeAmplitude = (float)visualizerBuilder.RangeAmplitude.GetValueOrDefault();
+                rangeOffset = (float)visualizerBuilder.RangeOffset.GetValueOrDefault();
+                rangeLabel = visualizerBuilder.RangeLabel;
+                UpdateRangeLimits();
             }
 
             imGuiCanvas = new ImGuiControl();

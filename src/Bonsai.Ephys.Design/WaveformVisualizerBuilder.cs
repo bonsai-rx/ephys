@@ -55,6 +55,24 @@ namespace Bonsai.Ephys.Design
         [Description("The number of adjacent channels to group under the same color.")]
         public int? ColorGrouping { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value specifying the fixed maximum amplitude of the waveform signal.
+        /// </summary>
+        [Description("Specifies the fixed maximum amplitude of the waveform signal.")]
+        public double? RangeAmplitude { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value specifying the fixed DC-offset of the waveform signal.
+        /// </summary>
+        [Description("Specifies the fixed DC-offset of the waveform signal.")]
+        public double? RangeOffset { get; set; }
+
+        /// <summary>
+        /// Gets or sets the label for the waveform amplitude range.
+        /// </summary>
+        [Description("The label for the waveform amplitude range.")]
+        public string RangeLabel { get; set; }
+
         /// <inheritdoc/>
         public override Expression Build(IEnumerable<Expression> arguments)
         {
