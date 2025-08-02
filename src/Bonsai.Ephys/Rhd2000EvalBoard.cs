@@ -39,6 +39,7 @@ namespace Bonsai.Ephys
         {
             BitFileName = "main.bit";
             SampleRate = AmplifierSampleRate.SampleRate20000Hz;
+            LedDisplayEnabled = true;
             LowerBandwidth = 0.1;
             UpperBandwidth = 7500.0;
             DspCutoffFrequency = 1.0;
@@ -50,7 +51,7 @@ namespace Bonsai.Ephys
                 return Task.Factory.StartNew(() =>
                 {
                     Load();
-                    var ledSequence = LedSequence();
+                    var ledSequence = LedSequence(LedDisplayEnabled);
                     try
                     {
                         evalBoard.SetTtlMode(0);
@@ -120,6 +121,13 @@ namespace Bonsai.Ephys
         [Category(BoardCategory)]
         [Description("The per-channel sampling rate.")]
         public AmplifierSampleRate SampleRate { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value specifying whether the board LED display is enabled;
+        /// otherwise, all board LEDs will be switched off on run.
+        /// </summary>
+        [Description("Specifies whether the board LED display is enabled.")]
+        public bool LedDisplayEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets a value specifying whether the external fast settle channel
@@ -200,16 +208,14 @@ namespace Bonsai.Ephys
         [Description("The optional delay for sampling the MISO line in port D, in integer clock steps.")]
         public int? CableDelayD { get; set; }
 
-        IEnumerator<int> LedSequence()
+        IEnumerator<int> LedSequence(bool enabled)
         {
-            var ledArray = new[] { 1, 0, 0, 0, 0, 0, 0, 0 };
-            var ledIndex = 0;
-            evalBoard.SetLedDisplay(ledArray);
-            yield return ledIndex;
+            var ledArray = new[] { 0, 0, 0, 0, 0, 0, 0, 0 };
+            var ledIndex = ledArray.Length - 1;
 
             try
             {
-                while (true)
+                while (enabled)
                 {
                     ledArray[ledIndex] = 0;
                     ledIndex = (ledIndex + 1) % ledArray.Length;
@@ -231,7 +237,7 @@ namespace Bonsai.Ephys
 
             var sampleRate = evalBoard.GetSampleRate();
             var chipRegisters = new Rhd2000Registers(sampleRate);
-            var ledSequence = LedSequence();
+            var ledSequence = LedSequence(LedDisplayEnabled);
             ledSequence.MoveNext();
 
             // Create a command list for the AuxCmd1 slot.
