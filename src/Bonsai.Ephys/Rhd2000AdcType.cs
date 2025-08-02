@@ -26,7 +26,7 @@
         Temperature,
 
         /// <summary>
-        /// RHD2000 USB interface board analog inputs, sampled in the 0V-3.3V range.
+        /// RHD2000 USB interface board analog inputs, range varies with board type.
         /// </summary>
         BoardAdc
     }

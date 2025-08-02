@@ -7,11 +7,11 @@ using System.Reactive.Linq;
 namespace Bonsai.Ephys
 {
     /// <summary>
-    /// Represents an operator that rescales ADC values sampled from RHD2000 data blocks
-    /// into SI voltage units.
+    /// Represents an operator that rescales ADC values sampled from the Open Ephys
+    /// Acquisition Board into SI voltage units.
     /// </summary>
-    [Description("Rescales ADC values sampled from RHD2000 data blocks into SI voltage units.")]
-    public class Rhd2000AdcScale : Transform<Mat, Mat>
+    [Description("Rescales ADC values sampled from the Open Ephys Acquisition Board into SI voltage units.")]
+    public class AcqBoardAdcScale : Transform<Mat, Mat>
     {
         /// <summary>
         /// Gets or sets the type of the ADC from which the input samples were taken.
@@ -20,7 +20,7 @@ namespace Bonsai.Ephys
         public Rhd2000AdcType AdcType { get; set; }
 
         /// <summary>
-        /// Rescales every RHD2000 ADC value in an observable sequence into SI voltage units.
+        /// Rescales every sampled ADC value in an observable sequence into SI voltage units.
         /// </summary>
         /// <param name="source">A sequence of multi-channel ADC values.</param>
         /// <returns>
@@ -51,7 +51,7 @@ namespace Bonsai.Ephys
                         CV.ConvertScale(input, output, 1 / 100.0, 0);
                         break;
                     case Rhd2000AdcType.BoardAdc:
-                        CV.ConvertScale(input, output, 0.000050354, 0);
+                        CV.ConvertScale(input, output, 0.00015258789f, -5 - 0.4096);
                         break;
                     default:
                         throw new InvalidOperationException("Invalid ADC type.");
@@ -60,15 +60,5 @@ namespace Bonsai.Ephys
                 return output;
             });
         }
-    }
-
-    /// <inheritdoc/>
-    /// <remarks>
-    /// This type has been superseded by <see cref="Rhd2000AdcScale"/> and <see cref="AcqBoardAdcScale"/>
-    /// to specify hardware-specific scale factors.
-    /// </remarks>
-    [Obsolete("Use Rhd2000AdcScale or AcqBoardAdcScale instead to specify hardware-specific scale factors.")]
-    public class AdcScale : Rhd2000AdcScale
-    {
     }
 }
