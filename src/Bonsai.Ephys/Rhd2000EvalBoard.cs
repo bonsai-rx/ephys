@@ -126,6 +126,7 @@ namespace Bonsai.Ephys
         /// Gets or sets a value specifying whether the board LED display is enabled;
         /// otherwise, all board LEDs will be switched off on run.
         /// </summary>
+        [Category(BoardCategory)]
         [Description("Specifies whether the board LED display is enabled.")]
         public bool LedDisplayEnabled { get; set; }
 
