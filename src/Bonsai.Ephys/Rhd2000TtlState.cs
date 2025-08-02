@@ -37,4 +37,13 @@ namespace Bonsai.Ephys
             });
         }
     }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// This type has been superseded by <see cref="Rhd2000TtlState"/>.
+    /// </remarks>
+    [Obsolete("Use Rhd2000TtlState instead to specify hardware-specific demultiplexing.")]
+    public class TtlState : Rhd2000TtlState
+    {
+    }
 }
