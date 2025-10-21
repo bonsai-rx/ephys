@@ -51,6 +51,7 @@ namespace Bonsai.Ephys.Design
         int colorGrouping = 1;
 
         bool useFixedRange;
+        bool invertSignal = false;
         float rangeAmplitude;
         float rangeOffset;
         string rangeLabel;
@@ -130,8 +131,8 @@ namespace Bonsai.Ephys.Design
                     CV.Range(timeRange, 0, timebase);
                 }
 
-                decimatorMin.Process(data);
-                decimatorMax.Process(data);
+                decimatorMin.Process(data, invertSignal);
+                decimatorMax.Process(data, invertSignal);
             }
         }
 
@@ -196,7 +197,7 @@ namespace Bonsai.Ephys.Design
         unsafe void MenuWidgets()
         {
             var tableFlags = ImGuiTableFlags.NoSavedSettings;
-            if (ImGui.BeginTable("##menu"u8, columns: 6, tableFlags))
+            if (ImGui.BeginTable("##menu"u8, columns: 7, tableFlags))
             {
                 ImGui.TableNextRow();
                 ImGui.PushItemWidth(TextBoxWidth);
@@ -321,6 +322,16 @@ namespace Bonsai.Ephys.Design
                         colorGrouping = Math.Max(1, colorGrouping);
                     ImGui.EndTable();
                 }
+
+                ImGui.TableNextColumn();
+                var color = invertSignal ? ImGui.GetColorU32(ImGuiCol.ButtonActive) : ImGui.GetColorU32(ImGuiCol.Button);
+                ImGui.PushStyleColor(ImGuiCol.Button, color);
+                if (ImGui.Button("Invert\nSignal"u8, buttonSize))
+                {
+                    invertSignal = !invertSignal;
+                }
+
+                ImGui.PopStyleColor();
 
                 ImGui.PopItemWidth();
                 ImGui.EndTable();
