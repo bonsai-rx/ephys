@@ -73,6 +73,12 @@ namespace Bonsai.Ephys.Design
         [Description("The label for the waveform amplitude range.")]
         public string RangeLabel { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value specifying if the signal should be inverted.
+        /// </summary>
+        [Description("Specifies if the signal should be inverted.")]
+        public bool Invert { get; set; }
+
         /// <inheritdoc/>
         public override Expression Build(IEnumerable<Expression> arguments)
         {

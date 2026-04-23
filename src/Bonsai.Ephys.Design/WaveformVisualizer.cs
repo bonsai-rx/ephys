@@ -51,7 +51,7 @@ namespace Bonsai.Ephys.Design
         int colorGrouping = 1;
 
         bool useFixedRange;
-        bool invertSignal = false;
+        bool invert = false;
         float rangeAmplitude;
         float rangeOffset;
         string rangeLabel;
@@ -110,6 +110,15 @@ namespace Bonsai.Ephys.Design
             set => rangeAmplitude = (float)value;
         }
 
+        /// <summary>
+        /// Gets or sets a value specifying if the signal should be inverted.
+        /// </summary>
+        public bool Invert
+        {
+            get => invert;
+            set => invert = value;
+        }
+
         /// <inheritdoc/>
         public override void Show(object value)
         {
@@ -131,8 +140,8 @@ namespace Bonsai.Ephys.Design
                     CV.Range(timeRange, 0, timebase);
                 }
 
-                decimatorMin.Process(data, invertSignal);
-                decimatorMax.Process(data, invertSignal);
+                decimatorMin.Process(data, invert);
+                decimatorMax.Process(data, invert);
             }
         }
 
@@ -293,6 +302,16 @@ namespace Bonsai.Ephys.Design
                     ImGui.PopStyleColor();
 
                 ImGui.TableNextColumn();
+                var color = invert ? ImGui.GetColorU32(ImGuiCol.ButtonActive) : ImGui.GetColorU32(ImGuiCol.Button);
+                ImGui.PushStyleColor(ImGuiCol.Button, color);
+                if (ImGui.Button("Invert"u8, buttonSize))
+                {
+                    invert = !invert;
+                }
+
+                ImGui.PopStyleColor();
+
+                ImGui.TableNextColumn();
                 if (ImGui.BeginTable("##colorThemeT"u8, 1, tableFlags))
                 {
                     ImGui.TableNextColumn();
@@ -322,16 +341,6 @@ namespace Bonsai.Ephys.Design
                         colorGrouping = Math.Max(1, colorGrouping);
                     ImGui.EndTable();
                 }
-
-                ImGui.TableNextColumn();
-                var color = invertSignal ? ImGui.GetColorU32(ImGuiCol.ButtonActive) : ImGui.GetColorU32(ImGuiCol.Button);
-                ImGui.PushStyleColor(ImGuiCol.Button, color);
-                if (ImGui.Button("Invert\nSignal"u8, buttonSize))
-                {
-                    invertSignal = !invertSignal;
-                }
-
-                ImGui.PopStyleColor();
 
                 ImGui.PopItemWidth();
                 ImGui.EndTable();
@@ -434,6 +443,7 @@ namespace Bonsai.Ephys.Design
                 rangeAmplitude = (float)visualizerBuilder.RangeAmplitude.GetValueOrDefault();
                 rangeOffset = (float)visualizerBuilder.RangeOffset.GetValueOrDefault();
                 rangeLabel = visualizerBuilder.RangeLabel;
+                invert = visualizerBuilder.Invert;
                 UpdateRangeLimits();
             }
 

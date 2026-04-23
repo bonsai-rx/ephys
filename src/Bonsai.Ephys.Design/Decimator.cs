@@ -41,11 +41,11 @@ namespace Bonsai.Ephys.Design
 
         public Depth InputDepth => inputDepth;
 
-        public void Process(Mat input, bool invertPolarity = false)
+        public void Process(Mat input, bool invert = false)
         {
             if (conversionBuffer is not null)
             {
-                CV.ConvertScale(input, conversionBuffer, invertPolarity ? -1 : 1);
+                CV.ConvertScale(input, conversionBuffer, invert ? -1 : 1);
                 input = conversionBuffer;
             }
 
