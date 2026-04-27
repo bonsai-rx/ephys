@@ -302,14 +302,8 @@ namespace Bonsai.Ephys.Design
                     ImGui.PopStyleColor();
 
                 ImGui.TableNextColumn();
-                var color = invert ? ImGui.GetColorU32(ImGuiCol.ButtonActive) : ImGui.GetColorU32(ImGuiCol.Button);
-                ImGui.PushStyleColor(ImGuiCol.Button, color);
-                if (ImGui.Button("Invert"u8, buttonSize))
-                {
-                    invert = !invert;
-                }
-
-                ImGui.PopStyleColor();
+                ImGui.Text("Signal"u8);
+                ImGui.Checkbox("Invert"u8, ref invert);
 
                 ImGui.TableNextColumn();
                 if (ImGui.BeginTable("##colorThemeT"u8, 1, tableFlags))
@@ -449,6 +443,7 @@ namespace Bonsai.Ephys.Design
             }
 
             imGuiCanvas = new ImGuiControl();
+            imGuiCanvas.Size = new System.Drawing.Size(700, 480);
             imGuiCanvas.Dock = DockStyle.Fill;
             imGuiCanvas.Render += (sender, e) =>
             {
