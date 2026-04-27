@@ -50,6 +50,7 @@ namespace Bonsai.Ephys.Design
         double timebase = 2.0;
         int colorGrouping = 1;
 
+        bool invert;
         bool useFixedRange;
         float rangeAmplitude;
         float rangeOffset;
@@ -109,6 +110,15 @@ namespace Bonsai.Ephys.Design
             set => rangeAmplitude = (float)value;
         }
 
+        /// <summary>
+        /// Gets or sets a value specifying whether the signal should be inverted.
+        /// </summary>
+        public bool Invert
+        {
+            get => invert;
+            set => invert = value;
+        }
+
         /// <inheritdoc/>
         public override void Show(object value)
         {
@@ -130,8 +140,8 @@ namespace Bonsai.Ephys.Design
                     CV.Range(timeRange, 0, timebase);
                 }
 
-                decimatorMin.Process(data);
-                decimatorMax.Process(data);
+                decimatorMin.Process(data, invert);
+                decimatorMax.Process(data, invert);
             }
         }
 
@@ -196,7 +206,7 @@ namespace Bonsai.Ephys.Design
         unsafe void MenuWidgets()
         {
             var tableFlags = ImGuiTableFlags.NoSavedSettings;
-            if (ImGui.BeginTable("##menu"u8, columns: 6, tableFlags))
+            if (ImGui.BeginTable("##menu"u8, columns: 7, tableFlags))
             {
                 ImGui.TableNextRow();
                 ImGui.PushItemWidth(TextBoxWidth);
@@ -290,6 +300,10 @@ namespace Bonsai.Ephys.Design
 
                 if (isButtonPressed)
                     ImGui.PopStyleColor();
+
+                ImGui.TableNextColumn();
+                ImGui.Text("Signal"u8);
+                ImGui.Checkbox("Invert"u8, ref invert);
 
                 ImGui.TableNextColumn();
                 if (ImGui.BeginTable("##colorThemeT"u8, 1, tableFlags))
@@ -419,6 +433,8 @@ namespace Bonsai.Ephys.Design
                     timebase = visualizerBuilder.Timebase.GetValueOrDefault();
                 if (visualizerBuilder.ColorGrouping.HasValue)
                     colorGrouping = visualizerBuilder.ColorGrouping.GetValueOrDefault();
+                if (visualizerBuilder.Invert.HasValue)
+                    invert = visualizerBuilder.Invert.GetValueOrDefault();
                 useFixedRange = visualizerBuilder.RangeAmplitude.HasValue;
                 rangeAmplitude = (float)visualizerBuilder.RangeAmplitude.GetValueOrDefault();
                 rangeOffset = (float)visualizerBuilder.RangeOffset.GetValueOrDefault();
@@ -427,6 +443,7 @@ namespace Bonsai.Ephys.Design
             }
 
             imGuiCanvas = new ImGuiControl();
+            imGuiCanvas.Size = new System.Drawing.Size(700, 480);
             imGuiCanvas.Dock = DockStyle.Fill;
             imGuiCanvas.Render += (sender, e) =>
             {
