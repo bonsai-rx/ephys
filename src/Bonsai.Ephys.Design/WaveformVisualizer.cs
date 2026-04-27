@@ -57,6 +57,8 @@ namespace Bonsai.Ephys.Design
         string rangeLabel;
         double vMin;
         double vMax;
+        int selectedChannel = -1;
+        bool expandChannel = false;
 
         /// <summary>
         /// Gets or sets a value specifying the color theme used to style the
@@ -383,6 +385,11 @@ namespace Bonsai.Ephys.Design
 
                 for (int i = 0; i < minShape.Height; i++)
                 {
+                    int rowIndex = i + 1;
+
+                    if (expandChannel && selectedChannel != rowIndex)
+                        continue;
+
                     var labelBuffer = stackalloc byte[32];
                     var channelLabel = new StrBuilder(labelBuffer, 32);
                     channelLabel.Reset();
@@ -390,14 +397,30 @@ namespace Bonsai.Ephys.Design
                     channelLabel.Append(i);
                     channelLabel.End();
 
+                    float height = expandChannel
+                                    ? ImGui.GetContentRegionAvail().Y
+                                    : channelHeight;
+
                     var channelColor = ImPlot.GetColormapColor(i / colorGrouping);
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     cursorPosY = ImGui.GetCursorPosY();
-                    ImGui.SetCursorPosY(cursorPosY + channelHeight / 2 - 5);
+                    ImGui.SetCursorPosY(cursorPosY + height / 2 - 5);
                     ImGui.Text(channelLabel);
                     ImGui.TableNextColumn();
-                    if (ImPlot.BeginPlot(channelLabel, new(-1, channelHeight), dataPlotFlags))
+
+                    bool isSelected = selectedChannel == rowIndex;
+                    if (ImGui.Selectable($"##ch{i}", isSelected, ImGuiSelectableFlags.AllowDoubleClick, new Vector2(0, height)))
+                    {
+                        selectedChannel = rowIndex;
+                        if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                        {
+                            expandChannel = !expandChannel;
+                        }
+                    }
+
+                    ImGui.SetCursorPosY(ImGui.GetCursorPosY() - height - 4);
+                    if (ImPlot.BeginPlot(channelLabel, new(-1, height), dataPlotFlags))
                     {
                         ImPlot.PushStyleColor(ImPlotCol.Line, channelColor);
                         ImPlot.SetupAxes(string.Empty, channelLabel, bareAxesFlags, bareAxesFlags);
