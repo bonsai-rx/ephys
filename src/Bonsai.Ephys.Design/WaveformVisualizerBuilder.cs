@@ -74,10 +74,10 @@ namespace Bonsai.Ephys.Design
         public string RangeLabel { get; set; }
 
         /// <summary>
-        /// Gets or sets a value specifying if the signal should be inverted.
+        /// Gets or sets a value specifying whether the signal should be inverted.
         /// </summary>
-        [Description("Specifies if the signal should be inverted.")]
-        public bool Invert { get; set; }
+        [Description("Specifies whether the signal should be inverted.")]
+        public bool? Invert { get; set; }
 
         /// <inheritdoc/>
         public override Expression Build(IEnumerable<Expression> arguments)

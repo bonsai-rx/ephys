@@ -50,8 +50,8 @@ namespace Bonsai.Ephys.Design
         double timebase = 2.0;
         int colorGrouping = 1;
 
+        bool invert;
         bool useFixedRange;
-        bool invert = false;
         float rangeAmplitude;
         float rangeOffset;
         string rangeLabel;
@@ -111,7 +111,7 @@ namespace Bonsai.Ephys.Design
         }
 
         /// <summary>
-        /// Gets or sets a value specifying if the signal should be inverted.
+        /// Gets or sets a value specifying whether the signal should be inverted.
         /// </summary>
         public bool Invert
         {
@@ -439,11 +439,12 @@ namespace Bonsai.Ephys.Design
                     timebase = visualizerBuilder.Timebase.GetValueOrDefault();
                 if (visualizerBuilder.ColorGrouping.HasValue)
                     colorGrouping = visualizerBuilder.ColorGrouping.GetValueOrDefault();
+                if (visualizerBuilder.Invert.HasValue)
+                    invert = visualizerBuilder.Invert.GetValueOrDefault();
                 useFixedRange = visualizerBuilder.RangeAmplitude.HasValue;
                 rangeAmplitude = (float)visualizerBuilder.RangeAmplitude.GetValueOrDefault();
                 rangeOffset = (float)visualizerBuilder.RangeOffset.GetValueOrDefault();
                 rangeLabel = visualizerBuilder.RangeLabel;
-                invert = visualizerBuilder.Invert;
                 UpdateRangeLimits();
             }
 
